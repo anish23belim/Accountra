@@ -127,19 +127,19 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Profit & Loss") {
-      const salesAggr = await prisma.invoice.aggregate({ _sum: { subTotal: true } });
-      const purchasesAggr = await prisma.purchase.aggregate({ _sum: { subTotal: true } });
-      const expensesAggr = await prisma.expense.aggregate({ _sum: { amount: true } });
+      const sales = await prisma.invoice.findMany();
+      const purchases = await prisma.purchase.findMany();
+      const expenses = await prisma.expense.findMany();
       
-      const sales = salesAggr._sum.subTotal || 0;
-      const purchases = purchasesAggr._sum.subTotal || 0;
-      const expenses = expensesAggr._sum.amount || 0;
+      const totalSales = sales.reduce((sum, s) => sum + s.totalAmount, 0);
+      const totalPurchases = purchases.reduce((sum, p) => sum + p.totalAmount, 0);
+      const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
       
       return [
-        { "Item": "Total Sales Revenue", "Amount": sales },
-        { "Item": "Total Cost of Purchases", "Amount": purchases },
-        { "Item": "Total Operating Expenses", "Amount": expenses },
-        { "Item": "Net Profit / Loss", "Amount": sales - purchases - expenses }
+        { "Category": "Sales", "Amount": totalSales },
+        { "Category": "Purchases", "Amount": totalPurchases },
+        { "Category": "Expenses", "Amount": totalExpenses },
+        { "Category": "Net Profit", "Amount": totalSales - totalPurchases - totalExpenses }
       ];
     }
 
@@ -151,7 +151,58 @@ export async function getReportData(type: string) {
 
     return [];
   } catch (error) {
-    console.error("Error generating report:", error);
+    console.error("Failed to fetch report:", error);
+    return [];
+  }
+}
+
+export async function getProfitLossStats() {
+  try {
+    const currentYear = new Date().getFullYear();
+    const startDate = new Date(currentYear, 0, 1);
+    const endDate = new Date(currentYear, 11, 31, 23, 59, 59);
+
+    const sales = await prisma.invoice.findMany({
+      where: { date: { gte: startDate, lte: endDate } }
+    });
+    
+    const purchases = await prisma.purchase.findMany({
+      where: { date: { gte: startDate, lte: endDate } }
+    });
+
+    const expenses = await prisma.expense.findMany({
+      where: { date: { gte: startDate, lte: endDate } }
+    });
+
+    const monthlyData = Array.from({ length: 12 }, (_, i) => ({
+      name: new Date(currentYear, i, 1).toLocaleString('default', { month: 'short' }),
+      sales: 0,
+      purchases: 0,
+      expenses: 0,
+      profit: 0
+    }));
+
+    sales.forEach(s => {
+      const month = s.date.getMonth();
+      monthlyData[month].sales += s.totalAmount;
+      monthlyData[month].profit += s.totalAmount;
+    });
+
+    purchases.forEach(p => {
+      const month = p.date.getMonth();
+      monthlyData[month].purchases += p.totalAmount;
+      monthlyData[month].profit -= p.totalAmount;
+    });
+
+    expenses.forEach(e => {
+      const month = e.date.getMonth();
+      monthlyData[month].expenses += e.amount;
+      monthlyData[month].profit -= e.amount;
+    });
+
+    return monthlyData;
+  } catch (error) {
+    console.error(error);
     return [];
   }
 }

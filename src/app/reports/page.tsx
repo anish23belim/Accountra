@@ -2,9 +2,10 @@
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Download, FileText, FileSpreadsheet, FileBarChart2, Loader2 } from "lucide-react";
-import { getReportData } from "../actions/reports";
-import { useState } from "react";
+import { Download, FileText, FileSpreadsheet, FileBarChart2, Loader2, TrendingUp } from "lucide-react";
+import { getReportData, getProfitLossStats } from "../actions/reports";
+import { useState, useEffect } from "react";
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
 export default function ReportsPage() {
   const reports = [
@@ -35,6 +36,17 @@ export default function ReportsPage() {
 
   const [loadingReport, setLoadingReport] = useState<string | null>(null);
   const [pageMessage, setPageMessage] = useState<{type: "error" | "success" | "info", text: string} | null>(null);
+  const [chartData, setChartData] = useState<any[]>([]);
+  const [loadingChart, setLoadingChart] = useState(true);
+
+  useEffect(() => {
+    async function loadStats() {
+      const data = await getProfitLossStats();
+      setChartData(data);
+      setLoadingChart(false);
+    }
+    loadStats();
+  }, []);
 
   const handleDownloadExcel = (reportName: string) => {
     // Redirect to API route which forces a file download directly from the server
@@ -50,7 +62,7 @@ export default function ReportsPage() {
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Reports Center</h2>
+        <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
       </div>
 
       {pageMessage && (
@@ -62,6 +74,43 @@ export default function ReportsPage() {
           {pageMessage.text}
         </div>
       )}
+
+      {/* Advanced Dashboard Chart */}
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            Financial Performance (Current Year)
+          </CardTitle>
+          <CardDescription>Monthly breakdown of Sales, Purchases, Expenses, and Profit</CardDescription>
+        </CardHeader>
+        <CardContent>
+          {loadingChart ? (
+            <div className="h-[400px] flex items-center justify-center">
+              <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+            </div>
+          ) : (
+            <div className="h-[400px] w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart
+                  data={chartData}
+                  margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="name" />
+                  <YAxis tickFormatter={(value) => `₹${value}`} />
+                  <Tooltip formatter={(value) => `₹${value}`} />
+                  <Legend />
+                  <Bar dataKey="sales" name="Sales" fill="#10b981" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="purchases" name="Purchases" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="expenses" name="Expenses" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                  <Line type="monotone" dataKey="profit" name="Net Profit" stroke="#3b82f6" strokeWidth={3} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       <div className="space-y-8 py-4">
         {reports.map((section, index) => (

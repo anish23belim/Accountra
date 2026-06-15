@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, FileText, Trash2 } from "lucide-react";
+import { Search, Plus, FileText, Trash2, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import Link from "next/link";
@@ -238,6 +238,25 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
     }
   };
 
+  const handleWhatsAppShare = (invoice: Invoice) => {
+    const phone = invoice.customerDetails?.phone || "";
+    let itemsList = "";
+    if (invoice.items && invoice.items.length > 0) {
+      itemsList = invoice.items.map(i => `- ${i.quantity}x ${i.name}`).join('\n');
+    } else {
+      itemsList = "- Professional Services / Goods";
+    }
+    
+    const message = `Hello *${invoice.customer}*,\n\nYour invoice *${invoice.number}* for *Rs. ${invoice.amount.toFixed(2)}* is ready.\n\nItems:\n${itemsList}\n\nPlease let us know if you have any questions.\n\nThank you!`;
+    
+    const cleanPhone = phone.replace(/\D/g, '');
+    const waUrl = cleanPhone 
+      ? `https://wa.me/91${cleanPhone.length === 10 ? cleanPhone : cleanPhone.slice(-10)}?text=${encodeURIComponent(message)}`
+      : `https://wa.me/?text=${encodeURIComponent(message)}`; // If no phone, just open WhatsApp Web to select contact
+      
+    window.open(waUrl, '_blank');
+  };
+
   const handleDeleteClick = (invoice: Invoice) => {
     setSelectedInvoice(invoice);
     setIsDeleteDialogOpen(true);
@@ -305,11 +324,14 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
                 <TableCell>{getStatusBadge(invoice.status)}</TableCell>
                 <TableCell className="text-right font-medium">₹{invoice.amount.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
-                  <Button onClick={() => handleGeneratePDF(invoice)} variant="ghost" size="sm" title="View PDF">
-                    <FileText className="h-4 w-4 text-slate-500" />
+                  <Button onClick={() => handleWhatsAppShare(invoice)} variant="ghost" size="sm" title="Share on WhatsApp" className="text-green-600 hover:text-green-700 hover:bg-green-50">
+                    <MessageCircle className="h-4 w-4" />
                   </Button>
-                  <Button onClick={() => alert("Edit Invoice functionality will be fully implemented in Phase 5.")} variant="ghost" size="sm" className="text-blue-600">Edit</Button>
-                  <Button onClick={() => handleDeleteClick(invoice)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700">
+                  <Button onClick={() => handleGeneratePDF(invoice)} variant="ghost" size="sm" title="Download PDF" className="text-blue-600 hover:text-blue-700 hover:bg-blue-50">
+                    <FileText className="h-4 w-4" />
+                  </Button>
+                  <Button onClick={() => alert("Edit Invoice functionality will be fully implemented in Phase 5.")} variant="ghost" size="sm" className="text-slate-600">Edit</Button>
+                  <Button onClick={() => handleDeleteClick(invoice)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </TableCell>
