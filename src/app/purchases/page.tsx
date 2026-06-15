@@ -11,7 +11,7 @@ export default async function PurchasesPage() {
   
   const purchases = dbPurchases.map(p => ({
     id: p.id,
-    billNumber: p.billNumber,
+    billNumber: p.billNumber || "",
     supplier: p.supplier.name,
     date: p.date.toISOString().split('T')[0],
     amount: p.totalAmount,

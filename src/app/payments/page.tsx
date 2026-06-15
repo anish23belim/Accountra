@@ -14,7 +14,7 @@ export default async function PaymentsPage() {
     id: p.id,
     reference: p.paymentNumber,
     date: p.date.toISOString().split('T')[0],
-    party: p.customerId ? p.customer?.name : p.supplier?.name || "Unknown",
+    party: (p.customerId ? p.customer?.name : p.supplier?.name) || "Unknown",
     amount: p.amount,
     method: p.method,
     type: (p.customerId ? "Received" : "Sent") as "Received" | "Sent"
