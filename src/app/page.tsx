@@ -1,0 +1,234 @@
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Overview } from "@/components/dashboard/overview";
+import { RecentTransactions } from "@/components/dashboard/recent-transactions";
+import { DollarSign, Users, Package, CreditCard, AlertCircle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import Link from "next/link";
+import { prisma } from "@/lib/auth";
+
+export default async function Dashboard() {
+  // Fetch real aggregated data
+  const totalSalesAggr = await prisma.invoice.aggregate({ _sum: { totalAmount: true } });
+  const totalSales = totalSalesAggr._sum.totalAmount || 0;
+
+  const totalExpensesAggr = await prisma.expense.aggregate({ _sum: { amount: true } });
+  const totalExpenses = totalExpensesAggr._sum.amount || 0;
+
+  const totalProfit = totalSales - totalExpenses;
+
+  const activeCustomers = await prisma.customer.count();
+  const totalSuppliers = await prisma.supplier.count();
+
+  // Pending money owed to us
+  const pendingReceivablesAggr = await prisma.customer.aggregate({ _sum: { currentBalance: true } });
+  const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
+
+  // Pending money we owe
+  const pendingPayablesAggr = await prisma.supplier.aggregate({ _sum: { currentBalance: true } });
+  const pendingPayables = pendingPayablesAggr._sum.currentBalance || 0;
+
+  // Low stock products
+  const products = await prisma.product.findMany();
+  const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
+
+  // Calculate actual Bank/Cash Balance
+  const allPayments = await prisma.payment.findMany({ select: { amount: true, customerId: true, supplierId: true } });
+  let totalReceived = 0;
+  let totalSent = 0;
+  allPayments.forEach(p => {
+    if (p.customerId) totalReceived += p.amount;
+    if (p.supplierId) totalSent += p.amount;
+  });
+  
+  const bankBalance = totalReceived - totalSent - totalExpenses;
+
+  // Recent transactions (Top 5 sales)
+  const recentInvoices = await prisma.invoice.findMany({
+    take: 5,
+    orderBy: { createdAt: 'desc' },
+    include: { customer: true }
+  });
+
+  const transactions = recentInvoices.map(inv => ({
+    id: inv.id,
+    name: inv.customer.name,
+    email: inv.customer.email || "No email",
+    amount: `+₹${inv.totalAmount.toFixed(2)}`,
+    status: inv.status,
+    type: "Sale"
+  }));
+
+  return (
+    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
+      <div className="flex items-center justify-between space-y-2">
+        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+      </div>
+      
+      {/* Alerts Section */}
+      <div className="grid gap-4 md:grid-cols-2">
+        {lowStockProducts.length > 0 ? (
+          <Link href="/products" className="block outline-none">
+            <Alert variant="destructive" className="hover:border-red-500 hover:shadow-sm transition-all cursor-pointer bg-red-50">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Low Stock Alert</AlertTitle>
+              <AlertDescription>
+                {lowStockProducts.length} products are running low on inventory. Please restock soon.
+              </AlertDescription>
+            </Alert>
+          </Link>
+        ) : (
+          <Alert className="bg-green-50 text-green-800 border-green-200">
+            <Package className="h-4 w-4" color="green" />
+            <AlertTitle>Inventory Healthy</AlertTitle>
+            <AlertDescription>
+              All products are adequately stocked.
+            </AlertDescription>
+          </Alert>
+        )}
+        
+        {pendingReceivables > 0 ? (
+          <Link href="/sales" className="block outline-none">
+            <Alert className="hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer bg-white">
+              <CreditCard className="h-4 w-4 text-blue-600" />
+              <AlertTitle className="text-blue-800">Pending Receivables</AlertTitle>
+              <AlertDescription>
+                You have ₹{pendingReceivables.toFixed(2)} pending to be collected from customers.
+              </AlertDescription>
+            </Alert>
+          </Link>
+        ) : (
+          <Alert className="bg-slate-50 text-slate-800">
+            <CreditCard className="h-4 w-4 text-slate-600" />
+            <AlertTitle>No Pending Receivables</AlertTitle>
+            <AlertDescription>
+              All customer invoices are paid.
+            </AlertDescription>
+          </Alert>
+        )}
+      </div>
+
+      {/* Stats Cards Section */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/sales" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
+              <DollarSign className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{totalSales.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/expenses" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
+              <CreditCard className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{totalExpenses.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/reports" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
+              <DollarSign className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                ₹{totalProfit.toFixed(2)}
+              </div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/customers" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
+              <Users className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{activeCustomers}</div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <Link href="/suppliers" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
+              <Users className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">{totalSuppliers}</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/payments" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Est. Bank Balance</CardTitle>
+              <DollarSign className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{bankBalance.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/sales" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Pending Receivables</CardTitle>
+              <DollarSign className="h-4 w-4 text-slate-500 text-green-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-green-600">₹{pendingReceivables.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/purchases" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Outstanding Payables</CardTitle>
+              <CreditCard className="h-4 w-4 text-slate-500 text-red-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-red-600">₹{pendingPayables.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Charts and Recent Transactions */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4">
+          <CardHeader>
+            <CardTitle>Overview</CardTitle>
+            <CardDescription>
+              Monthly Sales and Expenses Activity
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pl-2">
+            <Overview />
+          </CardContent>
+        </Card>
+        <Card className="col-span-3">
+          <CardHeader>
+            <CardTitle>Recent Sales</CardTitle>
+            <CardDescription>
+              Your most recent customer invoices.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecentTransactions transactions={transactions} />
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

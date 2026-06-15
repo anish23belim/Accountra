@@ -1,0 +1,249 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL") // uses connection pooling
+  directUrl = env("POSTGRES_URL_NON_POOLING") // uses a direct connection
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime?
+  password      String?
+  image         String?
+  role          String    @default("STAFF")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+// enum Role removed for SQLite compatibility
+
+model CompanySetting {
+  id                String    @id @default("1")
+  name              String    @default("Accountra Inc")
+  address           String?
+  state             String?
+  country           String?   @default("India")
+  pincode           String?
+  telephone         String?
+  mobile            String?
+  email             String?
+  website           String?
+  financialYearFrom DateTime?
+  booksBeginFrom    DateTime?
+  baseCurrencySymbol String?  @default("₹")
+  baseCurrencyName   String?  @default("INR")
+  panNumber         String?
+  gstNumber         String?
+  logoUrl           String?
+  updatedAt         DateTime  @updatedAt
+}
+
+model Customer {
+  id                  String   @id @default(cuid())
+  name                String
+  alias               String?
+  contactPerson       String?  // Added for Dealer Name / Owner Name
+  email               String?
+  phone               String?
+  address             String?
+  state               String?
+  country             String?  @default("India")
+  pincode             String?
+  customerType        String   @default("Customer") // "Customer" or "Dealer"
+  panNumber           String?
+  gstRegistrationType String?  @default("Regular")
+  gstNumber           String?
+  creditPeriodDays    Int?     @default(0)
+  maintainBillByBill  Boolean  @default(true)
+  openingBalance      Float    @default(0)
+  currentBalance      Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  invoices            Invoice[]
+  payments            Payment[]
+}
+
+model Supplier {
+  id                  String   @id @default(cuid())
+  name                String
+  alias               String?
+  contactPerson       String?  // Added for Dealer Name / Owner Name
+  email               String?
+  phone               String?
+  address             String?
+  state               String?
+  country             String?  @default("India")
+  pincode             String?
+  panNumber           String?
+  gstRegistrationType String?  @default("Regular")
+  gstNumber           String?
+  creditPeriodDays    Int?     @default(0)
+  maintainBillByBill  Boolean  @default(true)
+  openingBalance      Float    @default(0)
+  currentBalance      Float    @default(0)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+  
+  purchases       Purchase[]
+  payments        Payment[]
+}
+
+model Product {
+  id              String   @id @default(cuid())
+  name            String
+  description     String?
+  category        String?
+  sku             String?  @unique
+  barcode         String?  @unique
+  imageUrl        String?
+  unit            String   @default("PCS")
+  taxRate         Float    @default(0)
+  purchasePrice   Float    @default(0)
+  sellingPrice    Float    @default(0)
+  currentStock    Int      @default(0)
+  lowStockAlert   Int      @default(5)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  invoiceItems    InvoiceItem[]
+  purchaseItems   PurchaseItem[]
+}
+
+model Invoice {
+  id              String   @id @default(cuid())
+  invoiceNumber   String   @unique
+  date            DateTime @default(now())
+  dueDate         DateTime?
+  customerId      String
+  customer        Customer @relation(fields: [customerId], references: [id])
+  
+  narration       String?
+  transporter     String?
+  vehicleNo       String?
+  ewayBill        String?
+  destination     String?
+  
+  subTotal        Float    @default(0)
+  discountAmount  Float    @default(0)
+  freightCharge   Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  amountPaid      Float    @default(0)
+  
+  status          String   @default("UNPAID")
+  items           InvoiceItem[]
+  payments        Payment[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model InvoiceItem {
+  id              String   @id @default(cuid())
+  invoiceId       String
+  invoice         Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  
+  serialNumber    String?
+  quantity        Int
+  unitPrice       Float
+  discountAmount  Float    @default(0)
+  taxRate         Float    @default(0)
+  total           Float
+}
+
+model Purchase {
+  id              String   @id @default(cuid())
+  billNumber      String?
+  date            DateTime @default(now())
+  supplierId      String
+  supplier        Supplier @relation(fields: [supplierId], references: [id])
+  
+  narration       String?
+  transporter     String?
+  vehicleNo       String?
+  ewayBill        String?
+  destination     String?
+
+  subTotal        Float    @default(0)
+  discountAmount  Float    @default(0)
+  freightCharge   Float    @default(0)
+  taxAmount       Float    @default(0)
+  totalAmount     Float    @default(0)
+  amountPaid      Float    @default(0)
+  
+  status          String   @default("UNPAID")
+  items           PurchaseItem[]
+  payments        Payment[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model PurchaseItem {
+  id              String   @id @default(cuid())
+  purchaseId      String
+  purchase        Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id])
+  
+  serialNumber    String?
+  quantity        Int
+  unitPrice       Float
+  discountAmount  Float    @default(0)
+  taxRate         Float    @default(0)
+  total           Float
+}
+
+model Expense {
+  id              String   @id @default(cuid())
+  date            DateTime @default(now())
+  category        String
+  description     String?
+  amount          Float
+  paymentMethod   String   @default("CASH")
+  receiptUrl      String?
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  paymentNumber   String   @unique
+  date            DateTime @default(now())
+  amount          Float
+  method          String   @default("CASH")
+  reference       String?
+  
+  // Can be linked to Customer or Supplier
+  customerId      String?
+  customer        Customer? @relation(fields: [customerId], references: [id])
+  
+  supplierId      String?
+  supplier        Supplier? @relation(fields: [supplierId], references: [id])
+  
+  // Can be linked to specific invoice or purchase
+  invoiceId       String?
+  invoice         Invoice? @relation(fields: [invoiceId], references: [id])
+  
+  purchaseId      String?
+  purchase        Purchase? @relation(fields: [purchaseId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+// Enums removed for SQLite compatibility
