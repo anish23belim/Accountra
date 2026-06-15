@@ -30,6 +30,7 @@ type Product = {
   category: string | null;
   currentStock: number;
   sellingPrice: number;
+  tracksSerial?: boolean;
 };
 
 export function ProductTable({ initialData }: { initialData: Product[] }) {
@@ -40,7 +41,10 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
-  const [formData, setFormData] = useState({ name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0 });
+  const [formData, setFormData] = useState<{name: string, sku: string, category: string, currentStock: number, sellingPrice: number, tracksSerial: boolean, serialNumbers: string[]}>({ 
+    name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] 
+  });
+  const [currentSerialInput, setCurrentSerialInput] = useState("");
   
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -49,7 +53,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
 
   const handleOpenAdd = () => {
     setEditingProduct(null);
-    setFormData({ name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0 });
+    setFormData({ name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] });
+    setCurrentSerialInput("");
     setIsDialogOpen(true);
   };
 
@@ -61,7 +66,10 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
       category: product.category || "",
       currentStock: product.currentStock,
       sellingPrice: product.sellingPrice,
+      tracksSerial: product.tracksSerial || false,
+      serialNumbers: [], // We don't fetch existing serials in this simple view, only add new ones or edit basic info
     });
+    setCurrentSerialInput("");
     setIsDialogOpen(true);
   };
 
@@ -89,6 +97,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
       category: formData.category,
       currentStock: Number(formData.currentStock),
       sellingPrice: Number(formData.sellingPrice),
+      tracksSerial: formData.tracksSerial,
+      serialNumbers: formData.serialNumbers,
     });
 
     if (res.success && res.product) {
@@ -192,16 +202,92 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                 <Input id="category" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="stock">Current Stock</Label>
-                <Input id="stock" type="number" value={formData.currentStock} onChange={e => setFormData({...formData, currentStock: Number(e.target.value)})} />
-              </div>
+            <div className="grid grid-cols-2 gap-4 items-end">
               <div className="grid gap-2">
                 <Label htmlFor="price">Selling Price</Label>
                 <Input id="price" type="number" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} />
               </div>
+              <div className="flex items-center gap-2 h-10">
+                <input 
+                  type="checkbox" 
+                  id="tracksSerial" 
+                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  checked={formData.tracksSerial}
+                  onChange={e => setFormData({...formData, tracksSerial: e.target.checked})}
+                />
+                <Label htmlFor="tracksSerial" className="font-normal cursor-pointer">Track Serial Numbers</Label>
+              </div>
             </div>
+
+            {formData.tracksSerial ? (
+              <div className="space-y-3 bg-slate-50 p-3 rounded-md border">
+                <Label>Scan or Type Serial Number</Label>
+                <div className="flex gap-2">
+                  <Input 
+                    value={currentSerialInput}
+                    onChange={e => setCurrentSerialInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        const val = currentSerialInput.trim();
+                        if (val && !formData.serialNumbers.includes(val)) {
+                          setFormData({
+                            ...formData, 
+                            serialNumbers: [...formData.serialNumbers, val]
+                          });
+                        }
+                        setCurrentSerialInput("");
+                      }
+                    }}
+                    placeholder="Scan barcode and press Enter..."
+                    className="bg-white"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="secondary"
+                    onClick={() => {
+                      const val = currentSerialInput.trim();
+                      if (val && !formData.serialNumbers.includes(val)) {
+                        setFormData({
+                          ...formData, 
+                          serialNumbers: [...formData.serialNumbers, val]
+                        });
+                      }
+                      setCurrentSerialInput("");
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                {formData.serialNumbers.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-2 max-h-[120px] overflow-y-auto">
+                    {formData.serialNumbers.map((sn, idx) => (
+                      <Badge key={idx} variant="outline" className="bg-white flex items-center gap-1 pl-2 pr-1 py-1">
+                        {sn}
+                        <div 
+                          role="button" 
+                          className="hover:bg-slate-200 rounded-full p-0.5 cursor-pointer"
+                          onClick={() => setFormData({
+                            ...formData,
+                            serialNumbers: formData.serialNumbers.filter(s => s !== sn)
+                          })}
+                        >
+                          <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                        </div>
+                      </Badge>
+                    ))}
+                  </div>
+                )}
+                <div className="text-sm font-medium text-blue-700">
+                  Total Stock: {formData.serialNumbers.length}
+                </div>
+              </div>
+            ) : (
+              <div className="grid gap-2">
+                <Label htmlFor="stock">Current Stock</Label>
+                <Input id="stock" type="number" value={formData.currentStock} onChange={e => setFormData({...formData, currentStock: Number(e.target.value)})} />
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>

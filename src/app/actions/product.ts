@@ -22,38 +22,64 @@ export async function saveProduct(data: {
   category?: string;
   currentStock?: number;
   sellingPrice?: number;
+  tracksSerial?: boolean;
+  serialNumbers?: string[];
 }) {
   try {
-    let product;
+    let product: any;
     
     // Sanitize optional unique fields
     const safeSku = data.sku?.trim() === "" ? null : data.sku?.trim();
 
+    const productData = {
+      name: data.name,
+      sku: safeSku,
+      category: data.category,
+      currentStock: data.tracksSerial ? (data.serialNumbers?.length || 0) : (data.currentStock || 0),
+      sellingPrice: data.sellingPrice || 0,
+      tracksSerial: data.tracksSerial || false,
+    };
+
     if (data.id) {
       product = await prisma.product.update({
         where: { id: data.id },
-        data: {
-          name: data.name,
-          sku: safeSku,
-          category: data.category,
-          currentStock: data.currentStock || 0,
-          sellingPrice: data.sellingPrice || 0,
-        }
+        data: productData
       });
     } else {
       product = await prisma.product.create({
-        data: {
-          name: data.name,
-          sku: safeSku,
-          category: data.category,
-          currentStock: data.currentStock || 0,
-          sellingPrice: data.sellingPrice || 0,
-        }
+        data: productData
       });
     }
+
+    // Process serial numbers if tracking is enabled
+    if (data.tracksSerial && data.serialNumbers && data.serialNumbers.length > 0) {
+      const serialData = data.serialNumbers.map(sn => ({
+        serialNum: sn,
+        productId: product.id,
+        status: "AVAILABLE",
+      }));
+      
+      // We use createMany and skip duplicates
+      await prisma.serialNumber.createMany({
+        data: serialData,
+        skipDuplicates: true,
+      });
+      
+      // Recalculate stock based on actual AVAILABLE serials
+      const actualCount = await prisma.serialNumber.count({
+        where: { productId: product.id, status: "AVAILABLE" }
+      });
+      
+      product = await prisma.product.update({
+        where: { id: product.id },
+        data: { currentStock: actualCount }
+      });
+    }
+
     revalidatePath("/products");
     return { success: true, product };
   } catch (error) {
+    console.error(error);
     return { success: false, error: "Failed to save product" };
   }
 }

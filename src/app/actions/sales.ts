@@ -65,6 +65,12 @@ export async function createInvoice(data: {
             p.serialNumber.split(",").map(s => s.trim()).filter(Boolean).forEach(s => purchasedSerials.add(s));
           }
         });
+        
+        // Also fetch directly tracked SerialNumber records (Opening Stock)
+        const trackedSerials = await prisma.serialNumber.findMany({
+          where: { productId: item.productId }
+        });
+        trackedSerials.forEach(ts => purchasedSerials.add(ts.serialNum));
 
         // Fetch all sold serials
         const sales = await prisma.invoiceItem.findMany({

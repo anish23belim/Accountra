@@ -113,11 +113,31 @@ model Product {
   sellingPrice    Float    @default(0)
   currentStock    Int      @default(0)
   lowStockAlert   Int      @default(5)
+  tracksSerial    Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
   invoiceItems    InvoiceItem[]
   purchaseItems   PurchaseItem[]
+  serialNumbers   SerialNumber[]
+}
+
+model SerialNumber {
+  id              String   @id @default(cuid())
+  serialNum       String   @unique
+  status          String   @default("AVAILABLE") // AVAILABLE, SOLD, RETURNED
+  
+  productId       String
+  product         Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  purchaseItemId  String?
+  purchaseItem    PurchaseItem? @relation(fields: [purchaseItemId], references: [id])
+  
+  invoiceItemId   String?
+  invoiceItem     InvoiceItem?  @relation(fields: [invoiceItemId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 }
 
 model Invoice {
@@ -162,6 +182,8 @@ model InvoiceItem {
   discountAmount  Float    @default(0)
   taxRate         Float    @default(0)
   total           Float
+  
+  serialNumbers   SerialNumber[]
 }
 
 model Purchase {
@@ -205,6 +227,8 @@ model PurchaseItem {
   discountAmount  Float    @default(0)
   taxRate         Float    @default(0)
   total           Float
+  
+  serialNumbers   SerialNumber[]
 }
 
 model Expense {
