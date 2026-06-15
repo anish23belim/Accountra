@@ -91,8 +91,18 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
       sellingPrice: Number(formData.sellingPrice),
     });
 
-    if (res.success) {
+    if (res.success && res.product) {
+      if (editingProduct) {
+        setProducts(products.map(p => p.id === editingProduct.id ? res.product : p));
+      } else {
+        setProducts([res.product, ...products]);
+      }
+      setIsDialogOpen(false);
+    } else if (res.success) {
+      // Fallback if product data is not returned
       window.location.reload(); 
+    } else {
+      alert("Failed to save product.");
     }
   };
 

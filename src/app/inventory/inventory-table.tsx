@@ -32,6 +32,24 @@ export function InventoryTable({ products }: { products: Product[] }) {
   const [newStockStr, setNewStockStr] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
 
+  // For Global Stock Adjustment
+  const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
+  const [adjustmentProductId, setAdjustmentProductId] = useState("");
+
+  const handleSaveAdjustment = async () => {
+    if (!adjustmentProductId) return;
+    setIsUpdating(true);
+    const stockNum = parseInt(newStockStr) || 0;
+    const res = await updateStock(adjustmentProductId, stockNum);
+    if (res.success) {
+      setIsAdjustmentOpen(false);
+      setAdjustmentProductId("");
+    } else {
+      alert(res.error);
+    }
+    setIsUpdating(false);
+  };
+
   const filtered = products.filter(p => 
     p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
     (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
@@ -62,7 +80,9 @@ export function InventoryTable({ products }: { products: Product[] }) {
         <div className="flex gap-2">
           {/* Stock Adjustment usually means updating stock manually without a voucher */}
           <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => {
-            if(products.length > 0) handleUpdateClick(products[0]);
+            setAdjustmentProductId("");
+            setNewStockStr("");
+            setIsAdjustmentOpen(true);
           }}>
             <ArrowRightLeft className="mr-2 h-4 w-4" /> Stock Adjustment
           </Button>
@@ -133,7 +153,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
         </Table>
       </div>
 
-      {/* Stock Update Modal */}
+      {/* Stock Update Modal (Individual) */}
       <Dialog open={!!editProduct} onOpenChange={(open) => !open && setEditProduct(null)}>
         <DialogContent>
           <DialogHeader>
@@ -165,6 +185,49 @@ export function InventoryTable({ products }: { products: Product[] }) {
         </DialogContent>
       </Dialog>
 
+      {/* Global Stock Adjustment Modal */}
+      <Dialog open={isAdjustmentOpen} onOpenChange={setIsAdjustmentOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Stock Adjustment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Item</Label>
+              <select 
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={adjustmentProductId}
+                onChange={(e) => {
+                  setAdjustmentProductId(e.target.value);
+                  const p = products.find(x => x.id === e.target.value);
+                  if (p) setNewStockStr(p.currentStock.toString());
+                }}
+              >
+                <option value="">Select a product...</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} (Current: {p.currentStock})</option>
+                ))}
+              </select>
+            </div>
+            {adjustmentProductId && (
+              <div className="space-y-2">
+                <Label>New Stock Quantity</Label>
+                <Input 
+                  type="number"
+                  value={newStockStr} 
+                  onChange={(e) => setNewStockStr(e.target.value)} 
+                />
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsAdjustmentOpen(false)}>Cancel</Button>
+            <Button onClick={handleSaveAdjustment} disabled={!adjustmentProductId || isUpdating}>
+              {isUpdating ? "Saving..." : "Adjust Stock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

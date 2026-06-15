@@ -24,8 +24,9 @@ export async function saveProduct(data: {
   sellingPrice?: number;
 }) {
   try {
+    let product;
     if (data.id) {
-      await prisma.product.update({
+      product = await prisma.product.update({
         where: { id: data.id },
         data: {
           name: data.name,
@@ -36,7 +37,7 @@ export async function saveProduct(data: {
         }
       });
     } else {
-      await prisma.product.create({
+      product = await prisma.product.create({
         data: {
           name: data.name,
           sku: data.sku,
@@ -47,7 +48,7 @@ export async function saveProduct(data: {
       });
     }
     revalidatePath("/products");
-    return { success: true };
+    return { success: true, product };
   } catch (error) {
     return { success: false, error: "Failed to save product" };
   }
