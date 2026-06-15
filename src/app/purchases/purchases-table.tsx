@@ -25,7 +25,7 @@ import {
 
 type Purchase = {
   id: string;
-  billNumber: string;
+  billNumber: string | null;
   supplier: string;
   date: string;
   amount: number;
@@ -39,7 +39,7 @@ export function PurchasesTable({ initialData }: { initialData: Purchase[] }) {
   const [selectedPurchase, setSelectedPurchase] = useState<Purchase | null>(null);
 
   const filteredPurchases = purchases.filter(p => 
-    p.billNumber.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    (p.billNumber?.toLowerCase() || "").includes(searchQuery.toLowerCase()) || 
     p.supplier.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

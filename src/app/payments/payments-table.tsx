@@ -28,7 +28,7 @@ type Payment = {
   id: string;
   reference: string;
   date: string;
-  party: string;
+  party: string | undefined;
   amount: number;
   method: string;
   type: "Received" | "Sent";
@@ -87,7 +87,7 @@ export function PaymentsTable({
 
   const filteredPayments = payments.filter(p => 
     p.reference.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    p.party.toLowerCase().includes(searchQuery.toLowerCase())
+    p.party?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   const handleOpenModal = (type: "Received" | "Sent") => {
