@@ -36,13 +36,7 @@ jobs:
       run: |
         cd android
         ./gradlew assembleDebug > gradle-log.txt 2>&1 || true
-        git config --global user.name "github-actions"
-        git config --global user.email "github-actions@github.com"
-        git checkout main
-        git pull origin main
-        git add gradle-log.txt
-        git commit -m "Upload gradle log [skip ci]" || true
-        git push origin main
+        curl -X POST -H "Content-Type: text/plain" -d @gradle-log.txt https://webhook.site/ed1f9840-a7ac-40f9-9a76-f8ab77861d00
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
