@@ -25,7 +25,7 @@ import { Label } from "@/components/ui/label";
 type Customer = {
   id: string;
   name: string;
-  contactPerson?: string;
+  contactPerson: string | null;
   customerType: string;
   alias: string | null;
   email: string | null;
