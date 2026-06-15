@@ -90,4 +90,3 @@ lint/tmp/
 *.hprof
 
 # Cordova plugins for Capacitor
-capacitor-cordova-android-plugins

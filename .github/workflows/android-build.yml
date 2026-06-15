@@ -33,10 +33,7 @@ jobs:
       run: chmod +x android/gradlew
 
     - name: Build with Gradle
-      run: |
-        cd android
-        ./gradlew assembleDebug > gradle-log.txt 2>&1 || true
-        curl -X POST -H "Content-Type: text/plain" -d @gradle-log.txt https://webhook.site/ed1f9840-a7ac-40f9-9a76-f8ab77861d00
+      run: cd android && ./gradlew assembleDebug
 
     - name: Upload APK
       uses: actions/upload-artifact@v4
