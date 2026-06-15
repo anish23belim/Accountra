@@ -49,6 +49,10 @@ const navItems = [
 export function TopNav() {
   const pathname = usePathname();
 
+  if (pathname === '/login') {
+    return null;
+  }
+
   return (
     <header className="sticky top-0 z-50 w-full border-b bg-white">
       <div className="flex h-16 items-center px-4 md:px-6">
