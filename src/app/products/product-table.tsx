@@ -138,11 +138,11 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
         </div>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-white hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Item Name</TableHead>
+              <TableHead>Product Name</TableHead>
               <TableHead>SKU</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Stock</TableHead>
@@ -179,6 +179,39 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden space-y-4">
+        {filteredProducts.map((product) => (
+          <div key={product.id} className="bg-white p-4 rounded-lg border shadow-sm flex flex-col space-y-2">
+            <div className="flex justify-between items-start">
+              <div className="font-medium text-lg text-slate-900">{product.name}</div>
+              <div className="font-bold text-lg">₹{product.sellingPrice.toFixed(2)}</div>
+            </div>
+            <div className="text-sm text-slate-500">
+              SKU: {product.sku || "-"} • Cat: {product.category || "-"}
+            </div>
+            <div className="flex justify-between items-center pt-2 border-t mt-2">
+              <div className="text-sm">
+                Stock: {product.currentStock <= 5 ? (
+                  <Badge variant="destructive" className="ml-1">{product.currentStock}</Badge>
+                ) : (
+                  <span className="font-medium ml-1">{product.currentStock}</span>
+                )}
+              </div>
+              <div className="flex gap-2">
+                <Button onClick={() => handleOpenEdit(product)} variant="outline" size="sm" className="text-blue-600 border-blue-200">Edit</Button>
+                <Button onClick={() => handleDeleteClick(product)} variant="outline" size="sm" className="text-red-600 border-red-200">Delete</Button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filteredProducts.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground bg-white rounded-lg border">
+            No products found.
+          </div>
+        )}
       </div>
 
       {/* Add/Edit Dialog */}

@@ -298,7 +298,7 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
         </div>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-white hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -346,6 +346,53 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
             )}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden space-y-4">
+        {filteredInvoices.map((invoice) => (
+          <div key={invoice.id} className="bg-white p-4 rounded-lg border shadow-sm flex flex-col space-y-3">
+            <div className="flex justify-between items-start">
+              <div>
+                <div 
+                  className="font-medium text-blue-600 cursor-pointer hover:underline text-lg"
+                  onClick={() => handleGeneratePDF(invoice, 'view')}
+                >
+                  {invoice.number}
+                </div>
+                <div className="text-sm text-slate-500 mt-1">{invoice.customer}</div>
+              </div>
+              <div className="text-right">
+                <div className="font-bold text-lg">₹{invoice.amount.toFixed(2)}</div>
+                <div className="mt-1">{getStatusBadge(invoice.status)}</div>
+              </div>
+            </div>
+            
+            <div className="text-xs text-slate-500">Date: {invoice.date}</div>
+            
+            <div className="flex justify-between items-center pt-2 border-t mt-2">
+              <Button onClick={() => handleWhatsAppShare(invoice)} variant="outline" size="sm" className="text-green-600 border-green-200 bg-green-50">
+                <MessageCircle className="h-4 w-4 mr-2" /> Share
+              </Button>
+              <div className="flex gap-1">
+                <Button onClick={() => handleGeneratePDF(invoice)} variant="ghost" size="sm" className="text-blue-600">
+                  <FileText className="h-4 w-4" />
+                </Button>
+                <Button onClick={() => alert("Edit Invoice functionality will be fully implemented in Phase 5.")} variant="ghost" size="sm" className="text-slate-600">
+                  Edit
+                </Button>
+                <Button onClick={() => handleDeleteClick(invoice)} variant="ghost" size="sm" className="text-red-600">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        ))}
+        {filteredInvoices.length === 0 && (
+          <div className="text-center py-8 text-muted-foreground bg-white rounded-lg border">
+            No invoices found.
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}

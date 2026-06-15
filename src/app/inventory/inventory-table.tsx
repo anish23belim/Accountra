@@ -108,7 +108,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      <div className="rounded-md border bg-white">
+      <div className="rounded-md border bg-white hidden md:block">
         <Table>
           <TableHeader>
             <TableRow>
@@ -151,6 +151,40 @@ export function InventoryTable({ products }: { products: Product[] }) {
             })}
           </TableBody>
         </Table>
+      </div>
+
+      {/* Mobile Card Layout */}
+      <div className="md:hidden space-y-4">
+        {filtered.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground bg-white rounded-lg border">
+            No inventory items found.
+          </div>
+        ) : filtered.map((item) => {
+          const status = item.currentStock === 0 ? "Out of Stock" : item.currentStock < item.lowStockAlert ? "Low Stock" : "Healthy";
+          return (
+            <div key={item.id} className="bg-white p-4 rounded-lg border shadow-sm flex flex-col space-y-2">
+              <div className="flex justify-between items-start">
+                <div className="font-medium text-lg text-slate-900">{item.name}</div>
+                <Badge variant={status === "Healthy" ? "default" : status === "Low Stock" ? "secondary" : "destructive"} 
+                       className={status === "Healthy" ? "bg-green-100 text-green-800 hover:bg-green-100" : status === "Low Stock" ? "bg-yellow-100 text-yellow-800 hover:bg-yellow-100" : ""}>
+                  {status}
+                </Badge>
+              </div>
+              <div className="text-sm text-slate-500">
+                SKU: {item.sku || "-"}
+              </div>
+              <div className="flex justify-between items-center pt-2 border-t mt-2">
+                <div className="text-sm flex flex-col">
+                  <span className="text-muted-foreground">Current Stock</span>
+                  <span className={`font-bold text-lg ${item.currentStock === 0 ? 'text-red-600' : item.currentStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
+                    {item.currentStock} <span className="text-sm font-normal text-slate-500 ml-1">(Min: {item.lowStockAlert})</span>
+                  </span>
+                </div>
+                <Button variant="outline" size="sm" className="text-blue-600 border-blue-200" onClick={() => handleUpdateClick(item)}>Update</Button>
+              </div>
+            </div>
+          );
+        })}
       </div>
 
       {/* Stock Update Modal (Individual) */}
