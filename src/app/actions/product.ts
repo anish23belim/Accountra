@@ -25,12 +25,16 @@ export async function saveProduct(data: {
 }) {
   try {
     let product;
+    
+    // Sanitize optional unique fields
+    const safeSku = data.sku?.trim() === "" ? null : data.sku?.trim();
+
     if (data.id) {
       product = await prisma.product.update({
         where: { id: data.id },
         data: {
           name: data.name,
-          sku: data.sku,
+          sku: safeSku,
           category: data.category,
           currentStock: data.currentStock || 0,
           sellingPrice: data.sellingPrice || 0,
@@ -40,7 +44,7 @@ export async function saveProduct(data: {
       product = await prisma.product.create({
         data: {
           name: data.name,
-          sku: data.sku,
+          sku: safeSku,
           category: data.category,
           currentStock: data.currentStock || 0,
           sellingPrice: data.sellingPrice || 0,
