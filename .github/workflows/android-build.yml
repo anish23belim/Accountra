@@ -8,6 +8,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
     - uses: actions/checkout@v4
@@ -34,11 +36,12 @@ jobs:
       run: |
         cd android
         ./gradlew assembleDebug > gradle-log.txt 2>&1 || true
-        git pull origin main
         git config --global user.name "github-actions"
         git config --global user.email "github-actions@github.com"
+        git checkout main
+        git pull origin main
         git add gradle-log.txt
-        git commit -m "Upload gradle log [skip ci]"
+        git commit -m "Upload gradle log [skip ci]" || true
         git push origin main
 
     - name: Upload APK
