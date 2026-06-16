@@ -15,7 +15,7 @@ import {
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { updateStock } from "@/app/actions/product";
+import { updateStock, transferStock } from "@/app/actions/product";
 import Link from "next/link";
 import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 
@@ -44,6 +44,13 @@ export function InventoryTable({ products, locations }: { products: Product[], l
   const [adjustmentProductId, setAdjustmentProductId] = useState("");
   const [adjustmentLocationId, setAdjustmentLocationId] = useState("");
 
+  // For Stock Transfer
+  const [isTransferOpen, setIsTransferOpen] = useState(false);
+  const [transferProductId, setTransferProductId] = useState("");
+  const [transferFromId, setTransferFromId] = useState("");
+  const [transferToId, setTransferToId] = useState("");
+  const [transferQty, setTransferQty] = useState("");
+
   const handleSaveAdjustment = async () => {
     if (!adjustmentProductId) return;
     setIsUpdating(true);
@@ -53,6 +60,23 @@ export function InventoryTable({ products, locations }: { products: Product[], l
       setIsAdjustmentOpen(false);
       setAdjustmentProductId("");
       setAdjustmentLocationId("");
+    } else {
+      alert(res.error);
+    }
+    setIsUpdating(false);
+  };
+
+  const handleSaveTransfer = async () => {
+    if (!transferProductId || !transferFromId || !transferToId || !transferQty) return;
+    setIsUpdating(true);
+    const qty = parseInt(transferQty) || 0;
+    const res = await transferStock(transferProductId, transferFromId, transferToId, qty);
+    if (res.success) {
+      setIsTransferOpen(false);
+      setTransferProductId("");
+      setTransferFromId("");
+      setTransferToId("");
+      setTransferQty("");
     } else {
       alert(res.error);
     }
@@ -98,18 +122,30 @@ export function InventoryTable({ products, locations }: { products: Product[], l
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Inventory Management</h2>
         <div className="flex gap-2">
+          {locations && locations.length > 1 && (
+            <Button variant="outline" className="flex-1 sm:flex-none text-purple-600 border-purple-200 hover:bg-purple-50" onClick={() => {
+              setTransferProductId("");
+              setTransferFromId("");
+              setTransferToId("");
+              setTransferQty("");
+              setIsTransferOpen(true);
+            }}>
+              <ArrowRightLeft className="mr-2 h-4 w-4" /> Transfer Stock
+            </Button>
+          )}
           {/* Stock Adjustment usually means updating stock manually without a voucher */}
           <Button variant="outline" className="flex-1 sm:flex-none text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => {
             setAdjustmentProductId("");
             setNewStockStr("");
+            setAdjustmentLocationId("");
             setIsAdjustmentOpen(true);
           }}>
-            <ArrowRightLeft className="mr-2 h-4 w-4" /> Stock Adjustment
+            <Search className="mr-2 h-4 w-4" /> Adjustment
           </Button>
           {/* Receive Goods generally implies purchasing stock */}
           <Link href="/purchases/new" className="flex-1 sm:flex-none">
             <Button className="w-full bg-blue-600 hover:bg-blue-700">
-              <Plus className="mr-2 h-4 w-4" /> Receive Goods
+              <Plus className="mr-2 h-4 w-4" /> Receive
             </Button>
           </Link>
         </div>
@@ -300,6 +336,81 @@ export function InventoryTable({ products, locations }: { products: Product[], l
             <Button variant="outline" onClick={() => setIsAdjustmentOpen(false)}>Cancel</Button>
             <Button onClick={handleSaveAdjustment} disabled={!adjustmentProductId || isUpdating}>
               {isUpdating ? "Saving..." : "Adjust Stock"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Stock Transfer Modal */}
+      <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Transfer Stock</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>Select Item to Transfer</Label>
+              <select 
+                className="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                value={transferProductId}
+                onChange={(e) => setTransferProductId(e.target.value)}
+              >
+                <option value="">Select a product...</option>
+                {products.map(p => (
+                  <option key={p.id} value={p.id}>{p.name} (Total: {p.currentStock})</option>
+                ))}
+              </select>
+            </div>
+            {transferProductId && locations && (
+              <>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>From Godown</Label>
+                    <select 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      value={transferFromId}
+                      onChange={(e) => setTransferFromId(e.target.value)}
+                    >
+                      <option value="">-- Select Source --</option>
+                      {locations.map(l => (
+                        <option key={l.id} value={l.id}>{l.name} {l.isDefault ? "(Main)" : ""}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>To Godown</Label>
+                    <select 
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      value={transferToId}
+                      onChange={(e) => setTransferToId(e.target.value)}
+                    >
+                      <option value="">-- Select Destination --</option>
+                      {locations.map(l => (
+                        <option key={l.id} value={l.id}>{l.name} {l.isDefault ? "(Main)" : ""}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>Quantity to Transfer</Label>
+                  <Input 
+                    type="number"
+                    value={transferQty} 
+                    onChange={(e) => setTransferQty(e.target.value)} 
+                    placeholder="Enter quantity"
+                  />
+                </div>
+              </>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTransferOpen(false)}>Cancel</Button>
+            <Button 
+              onClick={handleSaveTransfer} 
+              disabled={!transferProductId || !transferFromId || !transferToId || !transferQty || transferFromId === transferToId || isUpdating}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isUpdating ? "Transferring..." : "Confirm Transfer"}
             </Button>
           </DialogFooter>
         </DialogContent>

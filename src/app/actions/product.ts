@@ -136,3 +136,36 @@ export async function updateStock(id: string, newStock: number, locationId?: str
     return { success: false, error: "Failed to update stock" };
   }
 }
+
+export async function transferStock(productId: string, fromLocationId: string, toLocationId: string, quantity: number) {
+  try {
+    if (fromLocationId === toLocationId) return { success: false, error: "Cannot transfer to the same location" };
+    if (quantity <= 0) return { success: false, error: "Quantity must be greater than 0" };
+
+    const fromStock = await prisma.locationStock.findUnique({
+      where: { productId_locationId: { productId, locationId: fromLocationId } }
+    });
+
+    if (!fromStock || fromStock.quantity < quantity) {
+      return { success: false, error: "Insufficient stock in source location" };
+    }
+
+    // Decrement from source
+    await prisma.locationStock.update({
+      where: { productId_locationId: { productId, locationId: fromLocationId } },
+      data: { quantity: { decrement: quantity } }
+    });
+
+    // Increment in destination
+    await prisma.locationStock.upsert({
+      where: { productId_locationId: { productId, locationId: toLocationId } },
+      update: { quantity: { increment: quantity } },
+      create: { productId, locationId: toLocationId, quantity }
+    });
+
+    revalidatePath("/inventory");
+    return { success: true };
+  } catch (error: any) {
+    return { success: false, error: error.message || "Failed to transfer stock" };
+  }
+}
