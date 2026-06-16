@@ -23,21 +23,24 @@ export async function getCompanySettings() {
 
 export async function updateCompanySettings(data: {
   name: string;
-  address: string;
-  state: string;
-  country: string;
-  pincode: string;
-  telephone: string;
-  mobile: string;
-  email: string;
-  website: string;
-  financialYearFrom: Date | null;
-  booksBeginFrom: Date | null;
-  baseCurrencySymbol: string;
-  baseCurrencyName: string;
-  panNumber: string;
-  gstNumber: string;
-  logoUrl: string;
+  address?: string;
+  state?: string;
+  country?: string;
+  pincode?: string;
+  telephone?: string;
+  mobile?: string;
+  email?: string;
+  website?: string;
+  financialYearFrom?: Date | null;
+  booksBeginFrom?: Date | null;
+  baseCurrencySymbol?: string;
+  baseCurrencyName?: string;
+  panNumber?: string;
+  gstNumber?: string;
+  logoUrl?: string;
+  bankName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
   backupEmail?: string;
   backupPassword?: string;
 }) {

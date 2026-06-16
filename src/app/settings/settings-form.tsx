@@ -27,6 +27,9 @@ export function SettingsForm({ initialData }: { initialData: any }) {
     panNumber: initialData?.panNumber || "",
     gstNumber: initialData?.gstNumber || "",
     logoUrl: initialData?.logoUrl || "",
+    bankName: initialData?.bankName || "",
+    accountNumber: initialData?.accountNumber || "",
+    ifscCode: initialData?.ifscCode || "",
     backupEmail: initialData?.backupEmail || "",
     backupPassword: initialData?.backupPassword || "",
   });
@@ -189,6 +192,25 @@ export function SettingsForm({ initialData }: { initialData: any }) {
             </div>
           </div>
 
+          {/* Bank Details Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-lg font-semibold border-b pb-2 text-blue-600">Bank Details (For Invoices)</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Bank Name</Label>
+                <Input value={formData.bankName} onChange={(e) => handleChange("bankName", e.target.value)} placeholder="e.g. HDFC Bank" />
+              </div>
+              <div className="space-y-2">
+                <Label>Account Number</Label>
+                <Input value={formData.accountNumber} onChange={(e) => handleChange("accountNumber", e.target.value)} placeholder="e.g. 5010023..." />
+              </div>
+              <div className="space-y-2">
+                <Label>IFSC Code</Label>
+                <Input value={formData.ifscCode} onChange={(e) => handleChange("ifscCode", e.target.value)} placeholder="e.g. HDFC0001234" />
+              </div>
+            </div>
+          </div>
+          
           {/* Backup Settings Section */}
           <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-semibold border-b pb-2 text-blue-600">Auto Backup Settings (Nightly)</h3>

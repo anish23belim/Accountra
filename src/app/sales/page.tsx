@@ -25,6 +25,7 @@ export default async function SalesPage() {
     },
     date: inv.date.toISOString().split('T')[0],
     amount: inv.totalAmount,
+    taxAmount: inv.taxAmount,
     status: inv.status,
     transporter: inv.transporter || "",
     vehicleNo: inv.vehicleNo || "",

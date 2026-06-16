@@ -46,6 +46,11 @@ model CompanySetting {
   gstNumber         String?
   logoUrl           String?
   
+  // Bank Details
+  bankName          String?
+  accountNumber     String?
+  ifscCode          String?
+  
   // Backup Settings
   backupEmail       String?
   backupPassword    String?

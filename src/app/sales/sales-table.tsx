@@ -36,6 +36,7 @@ type Invoice = {
   };
   date: string;
   amount: number;
+  taxAmount?: number;
   status: string;
   transporter?: string;
   vehicleNo?: string;
@@ -193,42 +194,61 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
 
     const finalY = (doc as any).lastAutoTable.finalY;
     
-    // Totals row (simulated below table)
+    // Totals & Tax Summary
     doc.line(10, finalY, 200, finalY);
-    doc.setFontSize(10);
-    doc.setFont("helvetica", "bold");
-    doc.text("Grand Total:", 140, finalY + 6);
-    doc.text(`Rs. ${invoice.amount.toFixed(2)}`, 190, finalY + 6, { align: 'right' });
-    doc.line(10, finalY + 10, 200, finalY + 10);
     
-    // Footer Section (Amount in words, terms, signature)
+    const cgst = invoice.taxAmount ? invoice.taxAmount / 2 : 0;
+    const sgst = invoice.taxAmount ? invoice.taxAmount / 2 : 0;
+    const subTotal = invoice.amount - (invoice.taxAmount || 0);
+    
     doc.setFontSize(9);
     doc.setFont("helvetica", "normal");
-    doc.text(`Amount in words: Rupees ${Math.floor(invoice.amount)} Only`, 12, finalY + 16); // Basic wording
+    doc.text("Sub Total:", 140, finalY + 6);
+    doc.text(`Rs. ${subTotal.toFixed(2)}`, 190, finalY + 6, { align: 'right' });
     
-    doc.line(10, finalY + 22, 200, finalY + 22);
+    doc.text("Add: CGST", 140, finalY + 11);
+    doc.text(`Rs. ${cgst.toFixed(2)}`, 190, finalY + 11, { align: 'right' });
+    
+    doc.text("Add: SGST", 140, finalY + 16);
+    doc.text(`Rs. ${sgst.toFixed(2)}`, 190, finalY + 16, { align: 'right' });
+    
+    doc.line(140, finalY + 19, 200, finalY + 19);
+
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Grand Total:", 140, finalY + 24);
+    doc.text(`Rs. ${invoice.amount.toFixed(2)}`, 190, finalY + 24, { align: 'right' });
+    doc.line(10, finalY + 28, 200, finalY + 28);
+    
+    // Footer Section (Amount in words, terms, signature)
+    const baseFinalY = finalY + 18;
+    doc.setFontSize(9);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Amount in words: Rupees ${Math.floor(invoice.amount)} Only`, 12, baseFinalY + 16); // Basic wording
+    
+    doc.line(10, baseFinalY + 22, 200, baseFinalY + 22);
     
     doc.setFontSize(8);
     doc.setFont("helvetica", "bold");
-    doc.text("Terms & Conditions:", 12, finalY + 28);
+    doc.text("Terms & Conditions:", 12, baseFinalY + 28);
     doc.setFont("helvetica", "normal");
-    doc.text("1. Goods once sold will not be taken back.", 12, finalY + 33);
-    doc.text("2. Interest @ 18% p.a. will be charged if payment is delayed.", 12, finalY + 37);
-    doc.text("3. Subject to local jurisdiction.", 12, finalY + 41);
+    doc.text("1. Goods once sold will not be taken back.", 12, baseFinalY + 33);
+    doc.text("2. Interest @ 18% p.a. will be charged if payment is delayed.", 12, baseFinalY + 37);
+    doc.text("3. Subject to local jurisdiction.", 12, baseFinalY + 41);
     
     // Bank Details
     doc.setFont("helvetica", "bold");
-    doc.text("Bank Details:", 110, finalY + 28);
+    doc.text("Bank Details:", 110, baseFinalY + 28);
     doc.setFont("helvetica", "normal");
-    doc.text("Bank Name : HDFC Bank", 110, finalY + 33);
-    doc.text("A/C No.      : XXXXXXXXXXXX", 110, finalY + 37);
-    doc.text("IFSC Code  : HDFC0001234", 110, finalY + 41);
+    doc.text(`Bank Name : ${settings?.bankName || "-"}`, 110, baseFinalY + 33);
+    doc.text(`A/C No.      : ${settings?.accountNumber || "-"}`, 110, baseFinalY + 37);
+    doc.text(`IFSC Code  : ${settings?.ifscCode || "-"}`, 110, baseFinalY + 41);
 
     // Signature
     doc.setFontSize(10);
     doc.setFont("helvetica", "bold");
-    doc.text(`For ${settings?.name || "ACCOUNTRA INC."}`, 190, finalY + 55, { align: "right" });
-    doc.text("Authorized Signatory", 190, finalY + 70, { align: "right" });
+    doc.text(`For ${settings?.name || "ACCOUNTRA INC."}`, 190, baseFinalY + 55, { align: "right" });
+    doc.text("Authorized Signatory", 190, baseFinalY + 70, { align: "right" });
 
     if (action === 'view') {
       const pdfUrl = doc.output('bloburl');
@@ -247,7 +267,7 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
       itemsList = "- Professional Services / Goods";
     }
     
-    const message = `Hello *${invoice.customer}*,\n\nYour invoice *${invoice.number}* for *Rs. ${invoice.amount.toFixed(2)}* is ready.\n\nItems:\n${itemsList}\n\nPlease let us know if you have any questions.\n\nThank you!`;
+    const message = `Hello *${invoice.customer}*,\n\nYour invoice *${invoice.number}* for *Rs. ${invoice.amount.toFixed(2)}* is ready.\n\n*Items:*\n${itemsList}\n\n*Bank Details for Payment:*\nBank Name: ${settings?.bankName || "-"}\nA/C No: ${settings?.accountNumber || "-"}\nIFSC Code: ${settings?.ifscCode || "-"}\n\nPlease let us know if you have any questions.\n\nThank you, \n*${settings?.name || "Our Company"}*`;
     
     const cleanPhone = phone.replace(/\D/g, '');
     const waUrl = cleanPhone 
