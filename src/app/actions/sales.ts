@@ -27,6 +27,7 @@ export type InvoiceItemInput = {
 
 export async function createInvoice(data: {
   customerId: string;
+  locationId?: string;
   narration?: string;
   transporter?: string;
   vehicleNo?: string;
@@ -46,8 +47,25 @@ export async function createInvoice(data: {
       if (!product) {
         return { success: false, error: `Product not found.` };
       }
-      if (product.currentStock < item.quantity) {
-        return { success: false, error: `Insufficient stock for ${product.name}. Available: ${product.currentStock}, Requested: ${item.quantity}.` };
+      
+      let targetLocationId = data.locationId;
+      if (!targetLocationId) {
+        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        targetLocationId = defaultLoc?.id;
+      }
+      
+      if (targetLocationId) {
+        const locStock = await prisma.locationStock.findUnique({
+          where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } }
+        });
+        const avail = locStock?.quantity || 0;
+        if (avail < item.quantity) {
+          return { success: false, error: `Insufficient stock in selected Godown for ${product.name}. Available: ${avail}, Requested: ${item.quantity}.` };
+        }
+      } else {
+        if (product.currentStock < item.quantity) {
+          return { success: false, error: `Insufficient stock for ${product.name}. Available: ${product.currentStock}, Requested: ${item.quantity}.` };
+        }
       }
 
       // Serial Number Validation
@@ -115,6 +133,7 @@ export async function createInvoice(data: {
         taxAmount: data.taxAmount,
         totalAmount: data.totalAmount,
         status: "UNPAID",
+        locationId: data.locationId || undefined,
         items: {
           create: data.items.map(item => ({
             productId: item.productId,
@@ -139,8 +158,9 @@ export async function createInvoice(data: {
       }
     });
 
-    // Reduce product stock
+    // Reduce product stock and location stock
     for (const item of data.items) {
+      // 1. Reduce overall stock
       await prisma.product.update({
         where: { id: item.productId },
         data: {
@@ -149,6 +169,33 @@ export async function createInvoice(data: {
           }
         }
       });
+      
+      // 2. Reduce location specific stock
+      let targetLocationId = data.locationId;
+      if (!targetLocationId) {
+        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        targetLocationId = defaultLoc?.id;
+      }
+      
+      if (targetLocationId) {
+        await prisma.locationStock.update({
+          where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
+          data: {
+            quantity: {
+              decrement: item.quantity
+            }
+          }
+        });
+        
+        // Also update SerialNumber records if applicable
+        if (item.serialNumber && item.serialNumber.trim() !== "") {
+          const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
+          await prisma.serialNumber.updateMany({
+            where: { serialNum: { in: typedSerials } },
+            data: { status: "SOLD" }
+          });
+        }
+      }
     }
 
     revalidatePath("/sales");

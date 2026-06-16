@@ -27,7 +27,8 @@ export type PurchaseItemInput = {
 
 export async function createPurchase(data: {
   supplierId: string;
-  billNumber: string;
+  locationId?: string;
+  billNumber?: string;
   narration?: string;
   transporter?: string;
   vehicleNo?: string;
@@ -41,10 +42,18 @@ export async function createPurchase(data: {
   items: PurchaseItemInput[];
 }) {
   try {
+    // Determine the target location
+    let targetLocationId = data.locationId;
+    if (!targetLocationId) {
+      const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+      targetLocationId = defaultLoc?.id;
+    }
+
     const purchase = await prisma.purchase.create({
       data: {
         billNumber: data.billNumber || `PO-${Date.now().toString().slice(-6)}`,
         supplierId: data.supplierId,
+        locationId: targetLocationId,
         narration: data.narration,
         transporter: data.transporter,
         vehicleNo: data.vehicleNo,
@@ -80,8 +89,9 @@ export async function createPurchase(data: {
       }
     });
 
-    // Increase product stock (we bought more)
+    // Increase product stock AND LocationStock
     for (const item of data.items) {
+      // 1. Overall Product Stock
       await prisma.product.update({
         where: { id: item.productId },
         data: {
@@ -90,6 +100,31 @@ export async function createPurchase(data: {
           }
         }
       });
+
+      // 2. Location Stock
+      if (targetLocationId) {
+        await prisma.locationStock.upsert({
+          where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
+          update: { quantity: { increment: item.quantity } },
+          create: { productId: item.productId, locationId: targetLocationId, quantity: item.quantity }
+        });
+      }
+      
+      // Also register SerialNumbers if provided
+      if (item.serialNumber && item.serialNumber.trim() !== "") {
+        const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
+        const serialData = typedSerials.map(sn => ({
+          serialNum: sn,
+          productId: item.productId,
+          status: "AVAILABLE",
+          locationId: targetLocationId
+        }));
+        
+        await prisma.serialNumber.createMany({
+          data: serialData,
+          skipDuplicates: true,
+        });
+      }
     }
 
     revalidatePath("/purchases");
