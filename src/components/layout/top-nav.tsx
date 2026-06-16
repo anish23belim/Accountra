@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import {
@@ -48,6 +49,7 @@ const navItems = [
 
 export function TopNav() {
   const pathname = usePathname();
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   if (pathname === '/login') {
     return null;
@@ -57,7 +59,7 @@ export function TopNav() {
     <header className="sticky top-0 z-50 w-full border-b bg-white">
       <div className="flex h-16 items-center px-4 md:px-6">
         {/* Mobile Menu */}
-        <Sheet>
+        <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
           <SheetTrigger render={<Button variant="ghost" size="icon" className="md:hidden mr-2" />}>
             <Menu className="h-5 w-5" />
             <span className="sr-only">Toggle navigation menu</span>
@@ -77,6 +79,7 @@ export function TopNav() {
                   <Link
                     key={item.href}
                     href={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
                     className={cn(
                       "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all hover:bg-slate-100",
                       isActive ? "bg-slate-100 text-blue-600" : "text-slate-600"
@@ -89,10 +92,10 @@ export function TopNav() {
               })}
             </div>
             <div className="mt-auto flex flex-col gap-2">
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start" variant="outline" onClick={() => setIsMobileMenuOpen(false)}>
                 <Plus className="mr-2 h-4 w-4" /> New Invoice
               </Button>
-              <Button className="w-full justify-start" variant="outline">
+              <Button className="w-full justify-start" variant="outline" onClick={() => setIsMobileMenuOpen(false)}>
                 <Plus className="mr-2 h-4 w-4" /> Add Expense
               </Button>
             </div>
