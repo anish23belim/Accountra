@@ -83,6 +83,7 @@ export async function GET(request: Request) {
   const format = url.searchParams.get('format')?.toLowerCase() ?? 'csv'; // csv or xlsx
 
   const session = await getServerSession(authOptions);
+  console.log("Export API - Active Session User:", session?.user);
   if (!session || (session.user as any)?.role !== 'ADMIN') {
     return new NextResponse('Forbidden', { status: 403 });
   }
