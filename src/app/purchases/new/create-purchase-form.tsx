@@ -20,6 +20,7 @@ export function CreatePurchaseForm({ suppliers, products, locations }: { supplie
   const [localSuppliers, setLocalSuppliers] = useState(suppliers);
   const [supplierId, setSupplierId] = useState("");
   const [locationId, setLocationId] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [billNumber, setBillNumber] = useState("");
   const [narration, setNarration] = useState("");
   
@@ -140,6 +141,7 @@ export function CreatePurchaseForm({ suppliers, products, locations }: { supplie
     const res = await createPurchase({
       supplierId,
       locationId: locationId || undefined,
+      date,
       billNumber,
       narration,
       transporter,
@@ -211,6 +213,10 @@ export function CreatePurchaseForm({ suppliers, products, locations }: { supplie
                     <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Voucher Date</Label>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
               </div>
             </div>
             

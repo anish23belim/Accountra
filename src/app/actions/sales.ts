@@ -76,6 +76,7 @@ export type InvoiceItemInput = {
 export async function createInvoice(data: {
   customerId: string;
   locationId?: string;
+  date?: string;
   narration?: string;
   transporter?: string;
   vehicleNo?: string;
@@ -170,6 +171,7 @@ export async function createInvoice(data: {
       data: {
         invoiceNumber,
         customerId: data.customerId,
+        date: data.date ? new Date(data.date) : undefined,
         narration: data.narration,
         transporter: data.transporter,
         vehicleNo: data.vehicleNo,

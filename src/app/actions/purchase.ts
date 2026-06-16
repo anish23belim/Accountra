@@ -75,6 +75,7 @@ export type PurchaseItemInput = {
 export async function createPurchase(data: {
   supplierId: string;
   locationId?: string;
+  date?: string;
   billNumber?: string;
   narration?: string;
   transporter?: string;
@@ -99,6 +100,7 @@ export async function createPurchase(data: {
     const purchase = await prisma.purchase.create({
       data: {
         billNumber: data.billNumber || `PO-${Date.now().toString().slice(-6)}`,
+        date: data.date ? new Date(data.date) : undefined,
         supplierId: data.supplierId,
         locationId: targetLocationId,
         narration: data.narration,

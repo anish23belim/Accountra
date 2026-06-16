@@ -20,6 +20,7 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [customerId, setCustomerId] = useState("");
   const [locationId, setLocationId] = useState("");
+  const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [narration, setNarration] = useState("");
   
   // Transport Details
@@ -157,6 +158,7 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
     const res = await createInvoice({
       customerId,
       locationId: locationId || undefined,
+      date,
       narration,
       transporter,
       vehicleNo,
@@ -219,6 +221,10 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
                     <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Voucher Date</Label>
+                <Input type="date" value={date} onChange={(e) => setDate(e.target.value)} className="h-10" />
               </div>
             </div>
             
