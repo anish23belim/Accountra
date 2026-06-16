@@ -6,27 +6,46 @@ import { usePathname } from "next/navigation";
 
 // 30 minutes in milliseconds
 const TIMEOUT_MS = 30 * 60 * 1000;
+const STORAGE_KEY = "accountra_last_activity";
 
 export function SessionTimeout() {
-  const { data: session } = useSession();
+  const { status } = useSession();
   const pathname = usePathname();
-  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const resetTimer = () => {
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    
-    // Only run the timeout if the user is logged in
-    if (session && pathname !== "/login") {
-      timeoutRef.current = setTimeout(() => {
-        // User has been inactive for 30 minutes, log them out
-        signOut({ callbackUrl: "/login" });
-      }, TIMEOUT_MS);
-    }
-  };
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
-    // Initial setup
-    resetTimer();
+    // Only run if the user is authenticated and not on login page
+    if (status !== "authenticated" || pathname === "/login") {
+      return;
+    }
+
+    // Initialize the last activity if not present
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, Date.now().toString());
+    }
+
+    const checkInactivity = () => {
+      const lastActivityStr = localStorage.getItem(STORAGE_KEY);
+      if (lastActivityStr) {
+        const lastActivity = parseInt(lastActivityStr, 10);
+        if (Date.now() - lastActivity > TIMEOUT_MS) {
+          // User has been inactive for too long, log them out
+          localStorage.removeItem(STORAGE_KEY);
+          signOut({ callbackUrl: "/login" });
+        }
+      }
+    };
+
+    // Check every 10 seconds
+    intervalRef.current = setInterval(checkInactivity, 10000);
+
+    // Also check when the tab becomes visible again
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        checkInactivity();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibilityChange);
 
     // Events that indicate user activity
     const events = [
@@ -36,16 +55,17 @@ export function SessionTimeout() {
       "DOMMouseScroll",
       "mousewheel",
       "touchmove",
-      "MSPointerMove"
+      "MSPointerMove",
+      "click"
     ];
 
-    // Throttle the reset to avoid running it too often (e.g. on every single mouse movement pixel)
+    // Throttle the activity update to avoid hitting localStorage too often
     let throttleTimer = false;
     const activityHandler = () => {
       if (!throttleTimer) {
-        resetTimer();
+        localStorage.setItem(STORAGE_KEY, Date.now().toString());
         throttleTimer = true;
-        setTimeout(() => { throttleTimer = false; }, 1000); // Only reset at most once per second
+        setTimeout(() => { throttleTimer = false; }, 2000); // Update at most once every 2 seconds
       }
     };
 
@@ -54,12 +74,13 @@ export function SessionTimeout() {
     });
 
     return () => {
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
       events.forEach(event => {
         window.removeEventListener(event, activityHandler);
       });
     };
-  }, [session, pathname]);
+  }, [status, pathname]);
 
   return null;
 }
