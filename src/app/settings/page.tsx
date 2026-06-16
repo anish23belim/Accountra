@@ -10,7 +10,7 @@ export default async function SettingsPage() {
         <h2 className="text-3xl font-bold tracking-tight">Company Settings</h2>
       </div>
       
-      <div className="max-w-2xl mt-8">
+      <div className="max-w-5xl mt-8">
         <SettingsForm initialData={settings} />
       </div>
     </div>
