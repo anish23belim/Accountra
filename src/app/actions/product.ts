@@ -22,6 +22,7 @@ export async function saveProduct(data: {
   sku?: string;
   category?: string;
   currentStock?: number;
+  purchasePrice?: number;
   sellingPrice?: number;
   tracksSerial?: boolean;
   serialNumbers?: string[];
@@ -37,6 +38,7 @@ export async function saveProduct(data: {
       sku: safeSku,
       category: data.category,
       currentStock: data.tracksSerial ? (data.serialNumbers?.length || 0) : (data.currentStock || 0),
+      purchasePrice: data.purchasePrice || 0,
       sellingPrice: data.sellingPrice || 0,
       tracksSerial: data.tracksSerial || false,
     };

@@ -30,6 +30,7 @@ type Product = {
   sku: string | null;
   category: string | null;
   currentStock: number;
+  purchasePrice: number;
   sellingPrice: number;
   tracksSerial?: boolean;
 };
@@ -42,8 +43,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   
-  const [formData, setFormData] = useState<{name: string, sku: string, category: string, currentStock: number, sellingPrice: number, tracksSerial: boolean, serialNumbers: string[]}>({ 
-    name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] 
+  const [formData, setFormData] = useState<{name: string, sku: string, category: string, currentStock: number, purchasePrice: number, sellingPrice: number, tracksSerial: boolean, serialNumbers: string[]}>({ 
+    name: "", sku: "", category: "", currentStock: 0, purchasePrice: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] 
   });
   const [currentSerialInput, setCurrentSerialInput] = useState("");
   
@@ -54,7 +55,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
 
   const handleOpenAdd = () => {
     setEditingProduct(null);
-    setFormData({ name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] });
+    setFormData({ name: "", sku: "", category: "", currentStock: 0, purchasePrice: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] });
     setCurrentSerialInput("");
     setIsDialogOpen(true);
   };
@@ -81,6 +82,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
       sku: product.sku || "",
       category: product.category || "",
       currentStock: product.currentStock,
+      purchasePrice: product.purchasePrice || 0,
       sellingPrice: product.sellingPrice,
       tracksSerial: product.tracksSerial || false,
       serialNumbers: [], // We don't fetch existing serials in this simple view, only add new ones or edit basic info
@@ -112,6 +114,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
       sku: formData.sku,
       category: formData.category,
       currentStock: Number(formData.currentStock),
+      purchasePrice: Number(formData.purchasePrice),
       sellingPrice: Number(formData.sellingPrice),
       tracksSerial: formData.tracksSerial,
       serialNumbers: formData.serialNumbers,
@@ -162,7 +165,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
               <TableHead>SKU</TableHead>
               <TableHead>Category</TableHead>
               <TableHead className="text-right">Stock</TableHead>
-              <TableHead className="text-right">Price</TableHead>
+              <TableHead className="text-right">Purchase Price</TableHead>
+              <TableHead className="text-right">Selling Price</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
@@ -179,7 +183,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                     <span className="font-medium">{product.currentStock}</span>
                   )}
                 </TableCell>
-                <TableCell className="text-right font-medium">₹{product.sellingPrice.toFixed(2)}</TableCell>
+                <TableCell className="text-right font-medium text-slate-500">₹{(product.purchasePrice || 0).toFixed(2)}</TableCell>
+                <TableCell className="text-right font-medium text-slate-900">₹{product.sellingPrice.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
                   <Button onClick={() => handleOpenEdit(product)} variant="ghost" size="sm" className="text-blue-600">Edit</Button>
                   <Button onClick={() => handleDeleteClick(product)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700">Delete</Button>
@@ -251,21 +256,26 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                 <Input id="category" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
               </div>
             </div>
-            <div className="grid grid-cols-2 gap-4 items-end">
+            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label htmlFor="price">Selling Price</Label>
-                <Input id="price" type="number" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} />
+                <Label htmlFor="purchasePrice">Purchase Price</Label>
+                <Input id="purchasePrice" type="number" value={formData.purchasePrice} onChange={e => setFormData({...formData, purchasePrice: Number(e.target.value)})} />
               </div>
-              <div className="flex items-center gap-2 h-10">
-                <input 
-                  type="checkbox" 
-                  id="tracksSerial" 
-                  className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                  checked={formData.tracksSerial}
-                  onChange={e => setFormData({...formData, tracksSerial: e.target.checked})}
-                />
-                <Label htmlFor="tracksSerial" className="font-normal cursor-pointer">Track Serial Numbers</Label>
+              <div className="grid gap-2">
+                <Label htmlFor="sellingPrice">Selling Price</Label>
+                <Input id="sellingPrice" type="number" value={formData.sellingPrice} onChange={e => setFormData({...formData, sellingPrice: Number(e.target.value)})} />
               </div>
+            </div>
+            
+            <div className="flex items-center gap-2 h-10 mt-2">
+              <input 
+                type="checkbox" 
+                id="tracksSerial" 
+                className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                checked={formData.tracksSerial}
+                onChange={e => setFormData({...formData, tracksSerial: e.target.checked})}
+              />
+              <Label htmlFor="tracksSerial" className="font-normal cursor-pointer">Track Serial Numbers (IMEI/SN)</Label>
             </div>
 
             {formData.tracksSerial ? (
