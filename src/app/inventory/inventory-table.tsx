@@ -76,11 +76,11 @@ export function InventoryTable({ products }: { products: Product[] }) {
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Inventory Management</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Inventory Management</h2>
         <div className="flex gap-2">
           {/* Stock Adjustment usually means updating stock manually without a voucher */}
-          <Button variant="outline" className="text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => {
+          <Button variant="outline" className="flex-1 sm:flex-none text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => {
             setAdjustmentProductId("");
             setNewStockStr("");
             setIsAdjustmentOpen(true);
@@ -88,8 +88,8 @@ export function InventoryTable({ products }: { products: Product[] }) {
             <ArrowRightLeft className="mr-2 h-4 w-4" /> Stock Adjustment
           </Button>
           {/* Receive Goods generally implies purchasing stock */}
-          <Link href="/purchases/new">
-            <Button className="bg-blue-600 hover:bg-blue-700">
+          <Link href="/purchases/new" className="flex-1 sm:flex-none">
+            <Button className="w-full bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" /> Receive Goods
             </Button>
           </Link>

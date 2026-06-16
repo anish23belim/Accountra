@@ -134,9 +134,9 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Products & Services</h2>
-        <Button onClick={handleOpenAdd} className="bg-blue-600 hover:bg-blue-700">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Products & Services</h2>
+        <Button onClick={handleOpenAdd} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add Item
         </Button>
       </div>
