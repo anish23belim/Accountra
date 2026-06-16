@@ -6,7 +6,7 @@ import { LocationsManager } from "./locations-manager";
 import { Building2, MapPin } from "lucide-react";
 
 export function SettingsLayout({ settings }: { settings: any }) {
-  const [activeTab, setActiveTab] = useState("general");
+  const [activeTab, setActiveTab] = useState<string>("");
 
   return (
     <div className="flex flex-col md:flex-row gap-8 mt-6 max-w-6xl">
@@ -36,6 +36,12 @@ export function SettingsLayout({ settings }: { settings: any }) {
         </div>
       </aside>
       <main className="flex-1 min-w-0">
+        {activeTab === '' && (
+          <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-slate-200 rounded-lg bg-slate-50 text-slate-500">
+            <Building2 className="w-10 h-10 mb-4 text-slate-400" />
+            <p>Select an option from the menu to view settings.</p>
+          </div>
+        )}
         {activeTab === 'general' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <SettingsForm initialData={settings} />
