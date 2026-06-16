@@ -14,11 +14,12 @@ import { saveCustomer } from "@/app/actions/customer";
 type Customer = { id: string; name: string };
 type Product = { id: string; name: string; sellingPrice: number; currentStock: number; unit: string; taxRate: number };
 
-export function CreateInvoiceForm({ customers, products }: { customers: Customer[], products: Product[] }) {
+export function CreateInvoiceForm({ customers, products, locations }: { customers: Customer[], products: Product[], locations: any[] }) {
   const router = useRouter();
   
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [customerId, setCustomerId] = useState("");
+  const [locationId, setLocationId] = useState("");
   const [narration, setNarration] = useState("");
   
   // Transport Details
@@ -155,6 +156,7 @@ export function CreateInvoiceForm({ customers, products }: { customers: Customer
 
     const res = await createInvoice({
       customerId,
+      locationId: locationId || undefined,
       narration,
       transporter,
       vehicleNo,
@@ -202,6 +204,19 @@ export function CreateInvoiceForm({ customers, products }: { customers: Customer
                   <option value="NEW" className="text-blue-600 font-semibold">+ Create New Party</option>
                   {localCustomers.map(c => (
                     <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>Godown / Branch (Location)</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={locationId}
+                  onChange={(e) => setLocationId(e.target.value)}
+                >
+                  <option value="">-- Main Shop (Default) --</option>
+                  {locations.filter(l => !l.isDefault).map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
                   ))}
                 </select>
               </div>

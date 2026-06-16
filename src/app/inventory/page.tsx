@@ -10,8 +10,15 @@ export default async function InventoryPage() {
       sku: true,
       currentStock: true,
       lowStockAlert: true,
+      locationStocks: {
+        include: { location: true }
+      }
     }
   });
 
-  return <InventoryTable products={products} />;
+  const locations = await prisma.location.findMany({
+    orderBy: { createdAt: 'asc' }
+  });
+
+  return <InventoryTable products={products} locations={locations} />;
 }

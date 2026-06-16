@@ -25,10 +25,16 @@ type Product = {
   sku: string | null;
   currentStock: number;
   lowStockAlert: number;
+  locationStocks?: Array<{
+    quantity: number;
+    locationId: string;
+    location: { id: string; name: string; isDefault: boolean; };
+  }>;
 };
 
-export function InventoryTable({ products }: { products: Product[] }) {
+export function InventoryTable({ products, locations }: { products: Product[], locations?: any[] }) {
   const [searchTerm, setSearchTerm] = useState("");
+  const [selectedLocation, setSelectedLocation] = useState("");
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [newStockStr, setNewStockStr] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
@@ -36,29 +42,42 @@ export function InventoryTable({ products }: { products: Product[] }) {
   // For Global Stock Adjustment
   const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
   const [adjustmentProductId, setAdjustmentProductId] = useState("");
+  const [adjustmentLocationId, setAdjustmentLocationId] = useState("");
 
   const handleSaveAdjustment = async () => {
     if (!adjustmentProductId) return;
     setIsUpdating(true);
     const stockNum = parseInt(newStockStr) || 0;
-    const res = await updateStock(adjustmentProductId, stockNum);
+    const res = await updateStock(adjustmentProductId, stockNum, adjustmentLocationId);
     if (res.success) {
       setIsAdjustmentOpen(false);
       setAdjustmentProductId("");
+      setAdjustmentLocationId("");
     } else {
       alert(res.error);
     }
     setIsUpdating(false);
   };
 
-  const filtered = products.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  const filtered = products.filter(p => {
+    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      (p.sku && p.sku.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // If a location is selected, the product must have some stock there, or at least we still show it but with 0 stock.
+    // Let's just show it and the stock will compute to 0.
+    return matchesSearch;
+  });
+
+  const getDisplayStock = (p: Product) => {
+    if (!selectedLocation) return p.currentStock;
+    const ls = p.locationStocks?.find(ls => ls.locationId === selectedLocation);
+    return ls ? ls.quantity : 0;
+  };
 
   const handleUpdateClick = (p: Product) => {
     setEditProduct(p);
-    setNewStockStr(p.currentStock.toString());
+    setNewStockStr(getDisplayStock(p).toString());
+    setAdjustmentLocationId(selectedLocation);
   };
 
   const handleSaveStock = async () => {
@@ -96,7 +115,7 @@ export function InventoryTable({ products }: { products: Product[] }) {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 py-4">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-2 py-4">
         <div className="relative w-full max-w-sm flex gap-2">
           <div className="relative flex-1">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -114,6 +133,19 @@ export function InventoryTable({ products }: { products: Product[] }) {
             className="px-3"
           />
         </div>
+        
+        {locations && locations.length > 0 && (
+          <select 
+            className="flex h-10 w-full sm:max-w-xs rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            value={selectedLocation}
+            onChange={(e) => setSelectedLocation(e.target.value)}
+          >
+            <option value="">All Locations (Total Stock)</option>
+            {locations.map(l => (
+              <option key={l.id} value={l.id}>{l.name} {l.isDefault ? "(Main)" : ""}</option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="rounded-md border bg-white hidden md:block">
@@ -136,13 +168,14 @@ export function InventoryTable({ products }: { products: Product[] }) {
                 </TableCell>
               </TableRow>
             ) : filtered.map((item) => {
-              const status = item.currentStock === 0 ? "Out of Stock" : item.currentStock < item.lowStockAlert ? "Low Stock" : "Healthy";
+              const displayStock = getDisplayStock(item);
+              const status = displayStock === 0 ? "Out of Stock" : displayStock < item.lowStockAlert ? "Low Stock" : "Healthy";
               return (
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.sku || '-'}</TableCell>
-                  <TableCell className={`text-right font-bold ${item.currentStock === 0 ? 'text-red-600' : item.currentStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
-                    {item.currentStock}
+                  <TableCell className={`text-right font-bold ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
+                    {displayStock}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">{item.lowStockAlert}</TableCell>
                   <TableCell>
@@ -168,7 +201,8 @@ export function InventoryTable({ products }: { products: Product[] }) {
             No inventory items found.
           </div>
         ) : filtered.map((item) => {
-          const status = item.currentStock === 0 ? "Out of Stock" : item.currentStock < item.lowStockAlert ? "Low Stock" : "Healthy";
+          const displayStock = getDisplayStock(item);
+          const status = displayStock === 0 ? "Out of Stock" : displayStock < item.lowStockAlert ? "Low Stock" : "Healthy";
           return (
             <div key={item.id} className="bg-white p-4 rounded-lg border shadow-sm flex flex-col space-y-2">
               <div className="flex justify-between items-start">
@@ -184,8 +218,8 @@ export function InventoryTable({ products }: { products: Product[] }) {
               <div className="flex justify-between items-center pt-2 border-t mt-2">
                 <div className="text-sm flex flex-col">
                   <span className="text-muted-foreground">Current Stock</span>
-                  <span className={`font-bold text-lg ${item.currentStock === 0 ? 'text-red-600' : item.currentStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
-                    {item.currentStock} <span className="text-sm font-normal text-slate-500 ml-1">(Min: {item.lowStockAlert})</span>
+                  <span className={`font-bold text-lg ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
+                    {displayStock} <span className="text-sm font-normal text-slate-500 ml-1">(Min: {item.lowStockAlert})</span>
                   </span>
                 </div>
                 <Button variant="outline" size="sm" className="text-blue-600 border-blue-200" onClick={() => handleUpdateClick(item)}>Update</Button>

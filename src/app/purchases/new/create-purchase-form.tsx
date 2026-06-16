@@ -14,11 +14,12 @@ import { saveSupplier } from "@/app/actions/supplier";
 type Supplier = { id: string; name: string };
 type Product = { id: string; name: string; purchasePrice: number; currentStock: number; unit: string; taxRate: number };
 
-export function CreatePurchaseForm({ suppliers, products }: { suppliers: Supplier[], products: Product[] }) {
+export function CreatePurchaseForm({ suppliers, products, locations }: { suppliers: Supplier[], products: Product[], locations: any[] }) {
   const router = useRouter();
   
   const [localSuppliers, setLocalSuppliers] = useState(suppliers);
   const [supplierId, setSupplierId] = useState("");
+  const [locationId, setLocationId] = useState("");
   const [billNumber, setBillNumber] = useState("");
   const [narration, setNarration] = useState("");
   
@@ -138,6 +139,7 @@ export function CreatePurchaseForm({ suppliers, products }: { suppliers: Supplie
 
     const res = await createPurchase({
       supplierId,
+      locationId: locationId || undefined,
       billNumber,
       narration,
       transporter,
@@ -196,6 +198,19 @@ export function CreatePurchaseForm({ suppliers, products }: { suppliers: Supplie
                   value={billNumber}
                   onChange={(e) => setBillNumber(e.target.value)}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label>Godown / Branch (Location)</Label>
+                <select 
+                  className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  value={locationId}
+                  onChange={(e) => setLocationId(e.target.value)}
+                >
+                  <option value="">-- Main Shop (Default) --</option>
+                  {locations.filter(l => !l.isDefault).map(l => (
+                    <option key={l.id} value={l.id}>{l.name}</option>
+                  ))}
+                </select>
               </div>
             </div>
             
