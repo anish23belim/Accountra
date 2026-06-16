@@ -414,11 +414,10 @@ export function InventoryTable({ products, locations }: { products: Product[], l
                 {products.find(p => p.id === transferProductId)?.tracksSerial && (
                   <div className="space-y-2">
                     <Label>Serial Numbers</Label>
-                    <textarea 
-                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 min-h-[80px]"
-                      placeholder="Enter serial numbers separated by comma or newline"
-                      value={transferSerials}
-                      onChange={(e) => setTransferSerials(e.target.value)}
+                    <SerialNumberManager 
+                      value={transferSerials} 
+                      onChange={setTransferSerials} 
+                      onQuantityChange={(qty) => setTransferQty(qty.toString())} 
                     />
                     <div className="text-xs text-slate-500">
                       Must provide exactly {transferQty || 0} serial numbers.
@@ -441,5 +440,88 @@ export function InventoryTable({ products, locations }: { products: Product[], l
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+// A helper component to handle separate serial number tags in a Modal
+function SerialNumberManager({ value, onChange, onQuantityChange }: { value: string; onChange: (v: string) => void; onQuantityChange: (qty: number) => void }) {
+  const [open, setOpen] = useState(false);
+  const [inputValue, setInputValue] = useState("");
+  const tags = value ? value.split(",").filter(Boolean) : [];
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" || e.key === ",") {
+      e.preventDefault();
+      const newTag = inputValue.trim();
+      if (newTag && !tags.includes(newTag)) {
+        const newTags = [...tags, newTag];
+        onChange(newTags.join(","));
+        onQuantityChange(newTags.length);
+        setInputValue("");
+      }
+    }
+  };
+
+  const removeTag = (indexToRemove: number) => {
+    const newTags = tags.filter((_, index) => index !== indexToRemove);
+    onChange(newTags.join(","));
+    onQuantityChange(newTags.length);
+  };
+
+  return (
+    <>
+      <Button 
+        type="button" 
+        onClick={() => setOpen(true)} 
+        variant="outline" 
+        size="sm" 
+        className="h-10 w-full font-normal text-slate-600 bg-white shadow-sm border-dashed border-slate-300"
+      >
+        {tags.length > 0 ? (
+          <span className="text-blue-700 font-medium">S.Nos Scanned ({tags.length})</span>
+        ) : "Click to Scan / Add S.Nos"}
+      </Button>
+      
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>Item Serial Numbers</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 pt-2">
+          <div className="space-y-2">
+            <Label>Scan or Type Serial Number & Press Enter</Label>
+            <Input 
+              autoFocus
+              placeholder="e.g. IMEI-12345" 
+              value={inputValue}
+              onChange={(e) => setInputValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </div>
+          <div className="border rounded-md p-2 min-h-[150px] max-h-[300px] overflow-y-auto bg-slate-50">
+            {tags.length === 0 ? (
+              <p className="text-sm text-slate-500 text-center py-8">No serial numbers added yet.</p>
+            ) : (
+              <div className="space-y-2">
+                {tags.map((tag, index) => (
+                  <div key={index} className="flex items-center justify-between bg-white border p-2 rounded-md text-sm shadow-sm">
+                    <span className="font-medium text-slate-700">{index + 1}. {tag}</span>
+                    <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-red-500 hover:bg-red-50" onClick={() => removeTag(index)}>
+                      <span className="sr-only">Delete</span>
+                      ×
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+          <div className="flex justify-between items-center text-sm font-medium">
+            <span className="text-slate-700">Total Scanned: <span className="text-blue-600 text-lg">{tags.length}</span></span>
+            <Button onClick={() => setOpen(false)}>Done</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
