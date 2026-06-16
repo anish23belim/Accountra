@@ -9,6 +9,7 @@ export async function deleteProduct(id: string) {
       where: { id }
     });
     revalidatePath("/products");
+    revalidatePath("/inventory");
     return { success: true };
   } catch (error) {
     return { success: false, error: "Failed to delete product" };
@@ -77,6 +78,7 @@ export async function saveProduct(data: {
     }
 
     revalidatePath("/products");
+    revalidatePath("/inventory");
     return { success: true, product };
   } catch (error) {
     console.error(error);
