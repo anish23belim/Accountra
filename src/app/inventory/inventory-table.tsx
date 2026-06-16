@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { updateStock } from "@/app/actions/product";
 import Link from "next/link";
+import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 
 type Product = {
   id: string;
@@ -96,14 +97,21 @@ export function InventoryTable({ products }: { products: Product[] }) {
       </div>
 
       <div className="flex items-center gap-2 py-4">
-        <div className="relative w-full max-w-sm">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            type="search"
-            placeholder="Search items by name or SKU..."
-            className="w-full pl-8 bg-white"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+        <div className="relative w-full max-w-sm flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              type="search"
+              placeholder="Search items by name or SKU..."
+              className="w-full pl-8 bg-white"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          <BarcodeScanner 
+            onScan={(text) => setSearchTerm(text)} 
+            buttonText="" 
+            className="px-3"
           />
         </div>
       </div>

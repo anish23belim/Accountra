@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { BarcodeScanner } from "@/components/ui/barcode-scanner";
 
 type Product = {
   id: string;
@@ -290,6 +291,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                   >
                     Add
                   </Button>
+                  <BarcodeScanner onScan={(text) => handleAddSerials(text)} />
                 </div>
                 {formData.serialNumbers.length > 0 && (
                   <div className="flex flex-wrap gap-2 mt-2 max-h-[120px] overflow-y-auto">
