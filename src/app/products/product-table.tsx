@@ -45,6 +45,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
     name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] 
   });
   const [currentSerialInput, setCurrentSerialInput] = useState("");
+  const [piecesPerScan, setPiecesPerScan] = useState<number>(1);
   
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
@@ -55,15 +56,28 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
     setEditingProduct(null);
     setFormData({ name: "", sku: "", category: "", currentStock: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] });
     setCurrentSerialInput("");
+    setPiecesPerScan(1);
     setIsDialogOpen(true);
   };
 
   const handleAddSerials = (inputStr: string) => {
     if (!inputStr.trim()) return;
-    const newSerials = inputStr.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+    const baseSerials = inputStr.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+    
+    let generatedSerials: string[] = [];
+    baseSerials.forEach(baseSn => {
+      if (piecesPerScan > 1) {
+        for (let i = 1; i <= piecesPerScan; i++) {
+          generatedSerials.push(`${baseSn}-${i}`);
+        }
+      } else {
+        generatedSerials.push(baseSn);
+      }
+    });
+
     setFormData(prev => {
       const existing = prev.serialNumbers;
-      const uniqueToAdd = newSerials.filter(s => !existing.includes(s));
+      const uniqueToAdd = generatedSerials.filter(s => !existing.includes(s));
       if (uniqueToAdd.length > 0) {
         return { ...prev, serialNumbers: [...existing, ...uniqueToAdd] };
       }
@@ -268,7 +282,19 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
 
             {formData.tracksSerial ? (
               <div className="space-y-3 bg-slate-50 p-3 rounded-md border">
-                <Label>Scan or Type Serial Number</Label>
+                <div className="flex justify-between items-center">
+                  <Label>Scan or Type Serial Number</Label>
+                  <div className="flex items-center gap-2">
+                    <Label className="text-xs text-muted-foreground">Pieces per scan:</Label>
+                    <Input 
+                      type="number" 
+                      min="1" 
+                      value={piecesPerScan} 
+                      onChange={e => setPiecesPerScan(Math.max(1, Number(e.target.value)))}
+                      className="w-16 h-8 text-sm"
+                    />
+                  </div>
+                </div>
                 <div className="flex gap-2">
                   <Input 
                     value={currentSerialInput}
