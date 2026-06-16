@@ -25,7 +25,9 @@ export function SettingsForm({ initialData }: { initialData: any }) {
     baseCurrencyName: initialData?.baseCurrencyName || "INR",
     panNumber: initialData?.panNumber || "",
     gstNumber: initialData?.gstNumber || "",
-    logoUrl: initialData?.logoUrl || ""
+    logoUrl: initialData?.logoUrl || "",
+    backupEmail: initialData?.backupEmail || "",
+    backupPassword: initialData?.backupPassword || "",
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -123,7 +125,7 @@ export function SettingsForm({ initialData }: { initialData: any }) {
           </div>
 
           {/* Books and Financial Year Details */}
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-semibold border-b pb-2 text-blue-600">Books and Financial Year Details</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -138,7 +140,7 @@ export function SettingsForm({ initialData }: { initialData: any }) {
           </div>
 
           {/* Statutory & Taxation */}
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-semibold border-b pb-2 text-blue-600">Statutory & Taxation</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -153,7 +155,7 @@ export function SettingsForm({ initialData }: { initialData: any }) {
           </div>
 
           {/* Base Currency Information */}
-          <div className="space-y-4">
+          <div className="space-y-4 pt-4 border-t">
             <h3 className="text-lg font-semibold border-b pb-2 text-blue-600">Base Currency Information</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-2">
@@ -161,18 +163,44 @@ export function SettingsForm({ initialData }: { initialData: any }) {
                 <Input value={formData.baseCurrencySymbol} onChange={(e) => handleChange("baseCurrencySymbol", e.target.value)} />
               </div>
               <div className="space-y-2">
-                <Label>Formal Name</Label>
+                <Label>Base Currency Name</Label>
                 <Input value={formData.baseCurrencyName} onChange={(e) => handleChange("baseCurrencyName", e.target.value)} />
               </div>
             </div>
           </div>
 
-          <div className="pt-4">
-            <Button type="submit" disabled={isSubmitting} className="w-full bg-blue-600 hover:bg-blue-700 h-12 text-lg">
-              <Save className="mr-2 h-5 w-5" /> 
-              {isSubmitting ? "Saving..." : "Save Company"}
-            </Button>
+          {/* Backup Settings Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <h3 className="text-lg font-semibold border-b pb-2 text-blue-600">Auto Backup Settings (Nightly)</h3>
+            <p className="text-sm text-slate-500">Provide a Gmail address and its <strong>App Password</strong> to receive your database backup every night at 12 AM.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Gmail Address</Label>
+                <Input 
+                  type="email" 
+                  placeholder="yourname@gmail.com" 
+                  value={formData.backupEmail} 
+                  onChange={(e) => handleChange("backupEmail", e.target.value)} 
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>App Password</Label>
+                <Input 
+                  type="password" 
+                  placeholder="16-character app password" 
+                  value={formData.backupPassword} 
+                  onChange={(e) => handleChange("backupPassword", e.target.value)} 
+                />
+                <p className="text-xs text-muted-foreground mt-1">
+                  Go to Google Account &gt; Security &gt; 2-Step Verification &gt; App Passwords to generate this.
+                </p>
+              </div>
+            </div>
           </div>
+
+          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
+            {isSubmitting ? "Saving..." : "Save Settings"}
+          </Button>
         </form>
       </CardContent>
     </Card>

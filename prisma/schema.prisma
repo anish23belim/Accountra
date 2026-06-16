@@ -45,6 +45,11 @@ model CompanySetting {
   panNumber         String?
   gstNumber         String?
   logoUrl           String?
+  
+  // Backup Settings
+  backupEmail       String?
+  backupPassword    String?
+  
   updatedAt         DateTime  @updatedAt
 }
 
