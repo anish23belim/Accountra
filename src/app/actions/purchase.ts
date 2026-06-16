@@ -28,7 +28,7 @@ export async function deletePurchase(id: string) {
       let targetLocationId = purchase.locationId;
       if (!targetLocationId) {
         const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
-        targetLocationId = defaultLoc?.id;
+        targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {

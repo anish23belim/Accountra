@@ -28,7 +28,7 @@ export async function deleteInvoice(id: string) {
       let targetLocationId = invoice.locationId;
       if (!targetLocationId) {
         const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
-        targetLocationId = defaultLoc?.id;
+        targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
