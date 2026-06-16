@@ -5,12 +5,60 @@ import { revalidatePath } from "next/cache";
 
 export async function deleteInvoice(id: string) {
   try {
+    const invoice = await prisma.invoice.findUnique({
+      where: { id },
+      include: { items: true }
+    });
+    
+    if (!invoice) return { success: false, error: "Invoice not found" };
+
+    // Revert Customer Balance
+    await prisma.customer.update({
+      where: { id: invoice.customerId },
+      data: { currentBalance: { decrement: invoice.totalAmount } }
+    });
+
+    // Revert Stock
+    for (const item of invoice.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { increment: item.quantity } }
+      });
+      
+      let targetLocationId = invoice.locationId;
+      if (!targetLocationId) {
+        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        targetLocationId = defaultLoc?.id;
+      }
+      
+      if (targetLocationId) {
+        await prisma.locationStock.update({
+          where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
+          data: { quantity: { increment: item.quantity } }
+        });
+      }
+
+      // Revert Serial Numbers
+      if (item.serialNumber && item.serialNumber.trim() !== "") {
+        const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
+        await prisma.serialNumber.updateMany({
+          where: { serialNum: { in: typedSerials } },
+          data: { status: "AVAILABLE" }
+        });
+      }
+    }
+
     await prisma.invoice.delete({
       where: { id }
     });
+    
     revalidatePath("/sales");
+    revalidatePath("/customers");
+    revalidatePath("/products");
+    revalidatePath("/inventory");
     return { success: true };
   } catch (error) {
+    console.error("Error deleting invoice:", error);
     return { success: false, error: "Failed to delete invoice" };
   }
 }

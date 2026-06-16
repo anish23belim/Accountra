@@ -5,12 +5,59 @@ import { revalidatePath } from "next/cache";
 
 export async function deletePurchase(id: string) {
   try {
+    const purchase = await prisma.purchase.findUnique({
+      where: { id },
+      include: { items: true }
+    });
+    
+    if (!purchase) return { success: false, error: "Purchase not found" };
+
+    // Revert Supplier Balance
+    await prisma.supplier.update({
+      where: { id: purchase.supplierId },
+      data: { currentBalance: { decrement: purchase.totalAmount } }
+    });
+
+    // Revert Stock
+    for (const item of purchase.items) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: { currentStock: { decrement: item.quantity } }
+      });
+      
+      let targetLocationId = purchase.locationId;
+      if (!targetLocationId) {
+        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        targetLocationId = defaultLoc?.id;
+      }
+      
+      if (targetLocationId) {
+        await prisma.locationStock.update({
+          where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
+          data: { quantity: { decrement: item.quantity } }
+        });
+      }
+
+      // Revert Serial Numbers (Delete them since they were created in this purchase)
+      if (item.serialNumber && item.serialNumber.trim() !== "") {
+        const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
+        await prisma.serialNumber.deleteMany({
+          where: { serialNum: { in: typedSerials } }
+        });
+      }
+    }
+
     await prisma.purchase.delete({
       where: { id }
     });
+    
     revalidatePath("/purchases");
+    revalidatePath("/suppliers");
+    revalidatePath("/products");
+    revalidatePath("/inventory");
     return { success: true };
   } catch (error) {
+    console.error("Error deleting purchase:", error);
     return { success: false, error: "Failed to delete purchase" };
   }
 }
