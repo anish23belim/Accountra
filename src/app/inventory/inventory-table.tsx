@@ -131,9 +131,9 @@ export function InventoryTable({ products, locations }: { products: Product[], l
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Inventory Management</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           {locations && locations.length > 1 && (
-            <Button variant="outline" className="flex-1 sm:flex-none text-purple-600 border-purple-200 hover:bg-purple-50" onClick={() => {
+            <Button variant="outline" className="flex-1 min-w-[120px] sm:flex-none text-purple-600 border-purple-200 hover:bg-purple-50" onClick={() => {
               setTransferProductId("");
               setTransferFromId("");
               setTransferToId("");
@@ -145,7 +145,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
             </Button>
           )}
           {/* Stock Adjustment usually means updating stock manually without a voucher */}
-          <Button variant="outline" className="flex-1 sm:flex-none text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => {
+          <Button variant="outline" className="flex-1 min-w-[120px] sm:flex-none text-blue-600 border-blue-200 hover:bg-blue-50" onClick={() => {
             setAdjustmentProductId("");
             setNewStockStr("");
             setAdjustmentLocationId("");
@@ -154,7 +154,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
             <Search className="mr-2 h-4 w-4" /> Adjustment
           </Button>
           {/* Receive Goods generally implies purchasing stock */}
-          <Link href="/purchases/new" className="flex-1 sm:flex-none">
+          <Link href="/purchases/new" className="flex-1 min-w-[120px] sm:flex-none">
             <Button className="w-full bg-blue-600 hover:bg-blue-700">
               <Plus className="mr-2 h-4 w-4" /> Receive
             </Button>
@@ -278,7 +278,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
 
       {/* Stock Update Modal (Individual) */}
       <Dialog open={!!editProduct} onOpenChange={(open) => !open && setEditProduct(null)}>
-        <DialogContent>
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update Stock</DialogTitle>
           </DialogHeader>
@@ -310,7 +310,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
 
       {/* Global Stock Adjustment Modal */}
       <Dialog open={isAdjustmentOpen} onOpenChange={setIsAdjustmentOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Stock Adjustment</DialogTitle>
           </DialogHeader>
@@ -354,7 +354,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
 
       {/* Stock Transfer Modal */}
       <Dialog open={isTransferOpen} onOpenChange={setIsTransferOpen}>
-        <DialogContent>
+        <DialogContent className="max-w-md w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Transfer Stock</DialogTitle>
           </DialogHeader>
