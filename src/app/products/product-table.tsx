@@ -58,6 +58,20 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
     setIsDialogOpen(true);
   };
 
+  const handleAddSerials = (inputStr: string) => {
+    if (!inputStr.trim()) return;
+    const newSerials = inputStr.split(/[\s,]+/).map(s => s.trim()).filter(Boolean);
+    setFormData(prev => {
+      const existing = prev.serialNumbers;
+      const uniqueToAdd = newSerials.filter(s => !existing.includes(s));
+      if (uniqueToAdd.length > 0) {
+        return { ...prev, serialNumbers: [...existing, ...uniqueToAdd] };
+      }
+      return prev;
+    });
+    setCurrentSerialInput("");
+  };
+
   const handleOpenEdit = (product: Product) => {
     setEditingProduct(product);
     setFormData({
@@ -262,14 +276,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                     onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         e.preventDefault();
-                        const val = currentSerialInput.trim();
-                        if (val && !formData.serialNumbers.includes(val)) {
-                          setFormData({
-                            ...formData, 
-                            serialNumbers: [...formData.serialNumbers, val]
-                          });
-                        }
-                        setCurrentSerialInput("");
+                        handleAddSerials(currentSerialInput);
                       }
                     }}
                     placeholder="Scan barcode and press Enter..."
@@ -278,16 +285,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                   <Button 
                     type="button" 
                     variant="secondary"
-                    onClick={() => {
-                      const val = currentSerialInput.trim();
-                      if (val && !formData.serialNumbers.includes(val)) {
-                        setFormData({
-                          ...formData, 
-                          serialNumbers: [...formData.serialNumbers, val]
-                        });
-                      }
-                      setCurrentSerialInput("");
-                    }}
+                    onClick={() => handleAddSerials(currentSerialInput)}
                   >
                     Add
                   </Button>
