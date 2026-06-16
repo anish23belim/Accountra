@@ -12,9 +12,9 @@ export default function SalesWrapper({ initialInvoices, settings }: { initialInv
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
         <h2 className="text-3xl font-bold tracking-tight">Sales</h2>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <ExportButton entity="sales" filters={{ search: searchQuery }} />
           <Link href="/sales/new">
             <Button className="bg-blue-600 hover:bg-blue-700">
