@@ -5,7 +5,13 @@ export default async function PaymentsPage() {
   const dbPayments = await prisma.payment.findMany({
     include: {
       customer: true,
-      supplier: true
+      supplier: true,
+      invoice: {
+        select: { invoiceNumber: true }
+      },
+      purchase: {
+        select: { billNumber: true }
+      }
     },
     orderBy: { createdAt: 'desc' }
   });
@@ -15,9 +21,11 @@ export default async function PaymentsPage() {
     reference: p.paymentNumber,
     date: p.date.toISOString().split('T')[0],
     party: (p.customerId ? p.customer?.name : p.supplier?.name) || "Unknown",
+    partyPhone: (p.customerId ? p.customer?.phone : p.supplier?.phone) || "",
     amount: p.amount,
     method: p.method,
-    type: (p.customerId ? "Received" : "Sent") as "Received" | "Sent"
+    type: (p.customerId ? "Received" : "Sent") as "Received" | "Sent",
+    appliedTo: p.invoice?.invoiceNumber || p.purchase?.billNumber || "Advance / On Account"
   }));
 
   const customers = await prisma.customer.findMany({
@@ -30,12 +38,15 @@ export default async function PaymentsPage() {
     orderBy: { name: 'asc' }
   });
 
+  const settings = await prisma.companySetting.findFirst() || {};
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <PaymentsTable 
         initialData={payments} 
         customers={customers} 
-        suppliers={suppliers} 
+        suppliers={suppliers}
+        settings={settings}
       />
     </div>
   );
