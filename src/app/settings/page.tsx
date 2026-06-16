@@ -1,6 +1,5 @@
 import { getCompanySettings } from "@/app/actions/settings";
-import { SettingsForm } from "./settings-form";
-import { LocationsManager } from "./locations-manager";
+import { SettingsLayout } from "./settings-layout";
 
 export default async function SettingsPage() {
   const settings = await getCompanySettings();
@@ -10,11 +9,7 @@ export default async function SettingsPage() {
       <div className="flex items-center justify-between">
         <h2 className="text-3xl font-bold tracking-tight">Company Settings</h2>
       </div>
-      
-      <div className="max-w-5xl mt-8 pb-10">
-        <SettingsForm initialData={settings} />
-        <LocationsManager />
-      </div>
+      <SettingsLayout settings={settings} />
     </div>
   );
 }
