@@ -10,8 +10,20 @@ export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
   // 1. Fetch real aggregated data
-  const totalSalesAggr = await prisma.invoice.aggregate({ _sum: { totalAmount: true } });
-  const totalSales = totalSalesAggr._sum.totalAmount || 0;
+  const invoicesWithItems = await prisma.invoice.findMany({
+    include: { items: { include: { product: true } } }
+  });
+
+  let totalSales = 0;
+  let totalCOGS = 0;
+
+  invoicesWithItems.forEach(inv => {
+    totalSales += inv.totalAmount;
+    inv.items.forEach(item => {
+      const costPrice = item.product?.purchasePrice || 0;
+      totalCOGS += costPrice * item.quantity;
+    });
+  });
 
   const totalPurchasesAggr = await prisma.purchase.aggregate({ _sum: { totalAmount: true } });
   const totalPurchases = totalPurchasesAggr._sum.totalAmount || 0;
@@ -19,8 +31,8 @@ export default async function Dashboard() {
   const totalExpensesAggr = await prisma.expense.aggregate({ _sum: { amount: true } });
   const totalExpenses = totalExpensesAggr._sum.amount || 0;
 
-  // Simple Cash-Basis Profit
-  const totalProfit = totalSales - totalPurchases - totalExpenses;
+  // Real Profit (Gross Margin - Expenses)
+  const totalProfit = totalSales - totalCOGS - totalExpenses;
 
   const activeCustomers = await prisma.customer.count();
   const totalSuppliers = await prisma.supplier.count();
@@ -51,11 +63,6 @@ export default async function Dashboard() {
   // 2. Fetch data for the Chart (Current Year Monthly Data)
   const currentYear = new Date().getFullYear();
   
-  const allInvoices = await prisma.invoice.findMany({
-    where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
-    select: { date: true, totalAmount: true }
-  });
-  
   const allPurchases = await prisma.purchase.findMany({
     where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
     select: { date: true, totalAmount: true }
@@ -68,7 +75,18 @@ export default async function Dashboard() {
 
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const chartData = monthNames.map((name, index) => {
-    const monthSales = allInvoices.filter(i => i.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const monthInvoices = invoicesWithItems.filter(i => i.date.getFullYear() === currentYear && i.date.getMonth() === index);
+    const monthSales = monthInvoices.reduce((acc, curr) => acc + curr.totalAmount, 0);
+    
+    const monthCOGS = monthInvoices.reduce((acc, curr) => {
+      let cogs = 0;
+      curr.items.forEach(item => {
+        const costPrice = item.product?.purchasePrice || 0;
+        cogs += costPrice * item.quantity;
+      });
+      return acc + cogs;
+    }, 0);
+
     const monthPurchases = allPurchases.filter(p => p.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
     const monthExpenses = allExpenses.filter(e => e.date.getMonth() === index).reduce((acc, curr) => acc + curr.amount, 0);
     
@@ -77,7 +95,7 @@ export default async function Dashboard() {
       sales: monthSales,
       expenses: monthExpenses,
       purchases: monthPurchases,
-      profit: monthSales - monthPurchases - monthExpenses
+      profit: monthSales - monthCOGS - monthExpenses
     };
   });
 
