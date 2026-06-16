@@ -91,14 +91,7 @@ export function TopNav() {
                 );
               })}
             </div>
-            <div className="mt-auto flex flex-col gap-2">
-              <Button className="w-full justify-start" variant="outline" onClick={() => setIsMobileMenuOpen(false)}>
-                <Plus className="mr-2 h-4 w-4" /> New Invoice
-              </Button>
-              <Button className="w-full justify-start" variant="outline" onClick={() => setIsMobileMenuOpen(false)}>
-                <Plus className="mr-2 h-4 w-4" /> Add Expense
-              </Button>
-            </div>
+            <div className="mt-auto"></div>
           </SheetContent>
         </Sheet>
 

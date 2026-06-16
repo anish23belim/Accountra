@@ -135,13 +135,13 @@ export function PaymentsTable({
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Payments</h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Payments</h2>
         <div className="flex gap-2">
-          <Button onClick={() => handleOpenModal("Received")} variant="outline" className="text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200">
+          <Button onClick={() => handleOpenModal("Received")} variant="outline" className="flex-1 sm:flex-none text-green-600 hover:text-green-700 hover:bg-green-50 border-green-200">
             <ArrowDownRight className="mr-2 h-4 w-4" /> Receive Payment
           </Button>
-          <Button onClick={() => handleOpenModal("Sent")} variant="outline" className="text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
+          <Button onClick={() => handleOpenModal("Sent")} variant="outline" className="flex-1 sm:flex-none text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200">
             <ArrowUpRight className="mr-2 h-4 w-4" /> Make Payment
           </Button>
         </div>
