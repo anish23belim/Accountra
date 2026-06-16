@@ -139,7 +139,7 @@ export function CreateReturnForm({ customers, products, locations }: { customers
     
     setIsSubmitting(true);
     
-    const formattedItems: InvoiceItemInput[] = calculatedItems.map(i => ({
+    const formattedItems: any[] = calculatedItems.map(i => ({
       productId: i.productId,
       serialNumber: i.serialNumber,
       quantity: i.quantity,
@@ -535,5 +535,6 @@ function SerialNumberManager({ value, onChange, onQuantityChange }: { value: str
     </>
   );
 }
+
 
 

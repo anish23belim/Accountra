@@ -69,9 +69,9 @@ export function CreateReturnForm({ suppliers, products, locations }: { suppliers
     setIsCreatingsupplier(true);
     const res = await saveSupplier({ 
       name: newSupplierName, 
-      contactPerson: newsupplierContactPerson,
+      
       phone: newsupplierPhone, 
-      supplierType: newsupplierType 
+       
     });
     if (res.success && res.id) {
       const newCust = { id: res.id, name: newSupplierName };
@@ -139,7 +139,7 @@ export function CreateReturnForm({ suppliers, products, locations }: { suppliers
     
     setIsSubmitting(true);
     
-    const formattedItems: InvoiceItemInput[] = calculatedItems.map(i => ({
+    const formattedItems: any[] = calculatedItems.map(i => ({
       productId: i.productId,
       serialNumber: i.serialNumber,
       quantity: i.quantity,
@@ -535,6 +535,8 @@ function SerialNumberManager({ value, onChange, onQuantityChange }: { value: str
     </>
   );
 }
+
+
 
 
 
