@@ -7,14 +7,18 @@ import Link from "next/link";
 import { prisma } from "@/lib/auth";
 
 export default async function Dashboard() {
-  // Fetch real aggregated data
+  // 1. Fetch real aggregated data
   const totalSalesAggr = await prisma.invoice.aggregate({ _sum: { totalAmount: true } });
   const totalSales = totalSalesAggr._sum.totalAmount || 0;
+
+  const totalPurchasesAggr = await prisma.purchase.aggregate({ _sum: { totalAmount: true } });
+  const totalPurchases = totalPurchasesAggr._sum.totalAmount || 0;
 
   const totalExpensesAggr = await prisma.expense.aggregate({ _sum: { amount: true } });
   const totalExpenses = totalExpensesAggr._sum.amount || 0;
 
-  const totalProfit = totalSales - totalExpenses;
+  // Simple Cash-Basis Profit
+  const totalProfit = totalSales - totalPurchases - totalExpenses;
 
   const activeCustomers = await prisma.customer.count();
   const totalSuppliers = await prisma.supplier.count();
@@ -31,7 +35,7 @@ export default async function Dashboard() {
   const products = await prisma.product.findMany();
   const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
 
-  // Calculate actual Bank/Cash Balance
+  // Calculate actual Bank/Cash Balance based on Payments
   const allPayments = await prisma.payment.findMany({ select: { amount: true, customerId: true, supplierId: true } });
   let totalReceived = 0;
   let totalSent = 0;
@@ -41,6 +45,39 @@ export default async function Dashboard() {
   });
   
   const bankBalance = totalReceived - totalSent - totalExpenses;
+
+  // 2. Fetch data for the Chart (Current Year Monthly Data)
+  const currentYear = new Date().getFullYear();
+  
+  const allInvoices = await prisma.invoice.findMany({
+    where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
+    select: { date: true, totalAmount: true }
+  });
+  
+  const allPurchases = await prisma.purchase.findMany({
+    where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
+    select: { date: true, totalAmount: true }
+  });
+  
+  const allExpenses = await prisma.expense.findMany({
+    where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
+    select: { date: true, amount: true }
+  });
+
+  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const chartData = monthNames.map((name, index) => {
+    const monthSales = allInvoices.filter(i => i.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const monthPurchases = allPurchases.filter(p => p.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const monthExpenses = allExpenses.filter(e => e.date.getMonth() === index).reduce((acc, curr) => acc + curr.amount, 0);
+    
+    return {
+      name,
+      sales: monthSales,
+      expenses: monthExpenses,
+      purchases: monthPurchases,
+      profit: monthSales - monthPurchases - monthExpenses
+    };
+  });
 
   // Recent transactions (Top 5 sales)
   const recentInvoices = await prisma.invoice.findMany({
@@ -54,7 +91,7 @@ export default async function Dashboard() {
     name: inv.customer.name,
     email: inv.customer.email || "No email",
     amount: `+₹${inv.totalAmount.toFixed(2)}`,
-    status: inv.status,
+    status: inv.status || "Completed",
     type: "Sale"
   }));
 
@@ -108,7 +145,7 @@ export default async function Dashboard() {
       </div>
 
       {/* Stats Cards Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <Link href="/sales" className="block outline-none">
           <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -117,6 +154,17 @@ export default async function Dashboard() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">₹{totalSales.toFixed(2)}</div>
+            </CardContent>
+          </Card>
+        </Link>
+        <Link href="/purchases" className="block outline-none">
+          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
+              <Package className="h-4 w-4 text-slate-500" />
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold">₹{totalPurchases.toFixed(2)}</div>
             </CardContent>
           </Card>
         </Link>
@@ -214,7 +262,7 @@ export default async function Dashboard() {
             </CardDescription>
           </CardHeader>
           <CardContent className="pl-2">
-            <Overview />
+            <Overview data={chartData} />
           </CardContent>
         </Card>
         <Card className="col-span-3">
