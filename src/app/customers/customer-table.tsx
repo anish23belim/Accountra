@@ -109,8 +109,11 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
     }
   };
 
+  const [isSaving, setIsSaving] = useState(false);
+
   const handleSave = async () => {
-    if (!formData.name) return;
+    if (!formData.name || isSaving) return;
+    setIsSaving(true);
     
     const res = await saveCustomer({
       id: editingCustomer?.id,
@@ -134,6 +137,7 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
       window.location.reload(); 
     } else {
       alert("Error saving customer.");
+      setIsSaving(false);
     }
   };
 
@@ -342,7 +346,9 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
           </div>
           <DialogFooter className="sticky bottom-0 bg-white py-2 border-t">
             <Button variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleSave} className="bg-blue-600 hover:bg-blue-700 px-8">Save</Button>
+            <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700 px-8">
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
