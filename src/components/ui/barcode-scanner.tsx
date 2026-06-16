@@ -25,28 +25,45 @@ export function BarcodeScanner({ onScan, buttonText = "Scan Camera", className }
       return;
     }
 
-    const scanner = new Html5QrcodeScanner(
-      "reader",
-      { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
-      /* verbose= */ false
-    );
-    scannerRef.current = scanner;
+    let isMounted = true;
+    let scanner: Html5QrcodeScanner | null = null;
 
-    scanner.render(
-      (decodedText) => {
-        // Stop scanning when a result is found
-        scanner.clear().then(() => {
-          scannerRef.current = null;
-          setIsOpen(false);
-          onScan(decodedText);
-        }).catch(console.error);
-      },
-      (error) => {
-        // Ignore scan errors, they happen continuously until a barcode is found
+    const initScanner = () => {
+      if (!isMounted) return;
+      const el = document.getElementById("reader");
+      if (!el) {
+        // Wait for Radix UI dialog to mount the element
+        setTimeout(initScanner, 50);
+        return;
       }
-    );
+
+      scanner = new Html5QrcodeScanner(
+        "reader",
+        { fps: 10, qrbox: { width: 250, height: 250 }, rememberLastUsedCamera: true },
+        /* verbose= */ false
+      );
+      scannerRef.current = scanner;
+
+      scanner.render(
+        (decodedText) => {
+          if (scanner) {
+            scanner.clear().then(() => {
+              scannerRef.current = null;
+              setIsOpen(false);
+              onScan(decodedText);
+            }).catch(console.error);
+          }
+        },
+        (error) => {
+          // ignore continuous errors
+        }
+      );
+    };
+
+    initScanner();
 
     return () => {
+      isMounted = false;
       if (scannerRef.current) {
         scannerRef.current.clear().catch(console.error);
         scannerRef.current = null;
