@@ -9,6 +9,7 @@ export async function deleteExpense(id: string) {
       where: { id }
     });
     revalidatePath("/expenses");
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     return { success: false, error: "Failed to delete expense" };
@@ -44,6 +45,7 @@ export async function saveExpense(data: {
       });
     }
     revalidatePath("/expenses");
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
     return { success: false, error: "Failed to save expense" };

@@ -6,6 +6,8 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import Link from "next/link";
 import { prisma } from "@/lib/auth";
 
+export const dynamic = 'force-dynamic';
+
 export default async function Dashboard() {
   // 1. Fetch real aggregated data
   const totalSalesAggr = await prisma.invoice.aggregate({ _sum: { totalAmount: true } });
