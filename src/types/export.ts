@@ -1,4 +1,4 @@
-// src/app/types/export.ts
+// src/types/export.ts
 export interface ExportColumn {
   /** Header that will appear in CSV/Excel */
   header: string;

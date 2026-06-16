@@ -1,4 +1,4 @@
-// src/app/lib/export.ts
+// src/lib/export.ts
 import { Writable } from 'stream';
 import { format as formatCsv } from '@fast-csv/format';
 import ExcelJS from 'exceljs';
@@ -15,7 +15,7 @@ export async function exportToCsv(data: any[], columns: ExportColumn[]): Promise
     callback();
   };
   const csvStream = formatCsv({ headers: columns.map(c => c.header) })
-    .transform(row => columns.map(c => row[c.accessor]))
+    .transform((row: any) => columns.map(c => row[c.accessor]))
     .on('error', err => {
       throw err;
     })
@@ -57,5 +57,5 @@ export async function exportToXlsx(data: any[], columns: ExportColumn[], sheetNa
     }
   });
 
-  return await workbook.xlsx.writeBuffer();
+  return await workbook.xlsx.writeBuffer() as any;
 }

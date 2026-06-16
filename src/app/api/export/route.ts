@@ -53,7 +53,7 @@ const entityMap: Record<string, { fetch: () => Promise<any[]>; columns: ExportCo
       });
       return data.map(p => ({
         id: p.id,
-        number: p.purchaseNumber,
+        number: p.billNumber ?? '',
         supplier: p.supplier.name,
         date: p.date?.toISOString().split('T')[0] ?? '',
         subTotal: p.subTotal,
@@ -83,7 +83,7 @@ export async function GET(request: Request) {
   const format = url.searchParams.get('format')?.toLowerCase() ?? 'csv'; // csv or xlsx
 
   const session = await getServerSession(authOptions);
-  if (!session || session.user?.role !== 'ADMIN') {
+  if (!session || (session.user as any)?.role !== 'ADMIN') {
     return new NextResponse('Forbidden', { status: 403 });
   }
 
@@ -111,7 +111,7 @@ export async function GET(request: Request) {
     mime = 'text/csv';
   }
 
-  const res = new NextResponse(buffer, {
+  const res = new NextResponse(buffer as any, {
     status: 200,
     headers: {
       'Content-Type': mime,

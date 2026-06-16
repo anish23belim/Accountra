@@ -1,4 +1,4 @@
-import { SalesWrapper } from './SalesWrapper';
+import SalesWrapper from './SalesWrapper';
 import { prisma } from '@/lib/auth';
 
 export default async function SalesPage() {
