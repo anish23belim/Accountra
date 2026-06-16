@@ -38,6 +38,8 @@ export async function updateCompanySettings(data: {
   panNumber: string;
   gstNumber: string;
   logoUrl: string;
+  backupEmail?: string;
+  backupPassword?: string;
 }) {
   try {
     await prisma.companySetting.upsert({
