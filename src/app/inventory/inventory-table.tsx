@@ -25,6 +25,7 @@ type Product = {
   sku: string | null;
   currentStock: number;
   lowStockAlert: number;
+  tracksSerial: boolean;
   locationStocks?: Array<{
     quantity: number;
     locationId: string;
@@ -50,6 +51,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
   const [transferFromId, setTransferFromId] = useState("");
   const [transferToId, setTransferToId] = useState("");
   const [transferQty, setTransferQty] = useState("");
+  const [transferSerials, setTransferSerials] = useState("");
 
   const handleSaveAdjustment = async () => {
     if (!adjustmentProductId) return;
@@ -70,13 +72,21 @@ export function InventoryTable({ products, locations }: { products: Product[], l
     if (!transferProductId || !transferFromId || !transferToId || !transferQty) return;
     setIsUpdating(true);
     const qty = parseInt(transferQty) || 0;
-    const res = await transferStock(transferProductId, transferFromId, transferToId, qty);
+    
+    let serialsArray: string[] = [];
+    const product = products.find(p => p.id === transferProductId);
+    if (product?.tracksSerial && transferSerials.trim() !== "") {
+      serialsArray = transferSerials.split(/[\n,]+/).map(s => s.trim()).filter(Boolean);
+    }
+    
+    const res = await transferStock(transferProductId, transferFromId, transferToId, qty, serialsArray);
     if (res.success) {
       setIsTransferOpen(false);
       setTransferProductId("");
       setTransferFromId("");
       setTransferToId("");
       setTransferQty("");
+      setTransferSerials("");
     } else {
       alert(res.error);
     }
@@ -128,6 +138,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
               setTransferFromId("");
               setTransferToId("");
               setTransferQty("");
+              setTransferSerials("");
               setIsTransferOpen(true);
             }}>
               <ArrowRightLeft className="mr-2 h-4 w-4" /> Transfer Stock
@@ -400,6 +411,20 @@ export function InventoryTable({ products, locations }: { products: Product[], l
                     placeholder="Enter quantity"
                   />
                 </div>
+                {products.find(p => p.id === transferProductId)?.tracksSerial && (
+                  <div className="space-y-2">
+                    <Label>Serial Numbers</Label>
+                    <textarea 
+                      className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 min-h-[80px]"
+                      placeholder="Enter serial numbers separated by comma or newline"
+                      value={transferSerials}
+                      onChange={(e) => setTransferSerials(e.target.value)}
+                    />
+                    <div className="text-xs text-slate-500">
+                      Must provide exactly {transferQty || 0} serial numbers.
+                    </div>
+                  </div>
+                )}
               </>
             )}
           </div>

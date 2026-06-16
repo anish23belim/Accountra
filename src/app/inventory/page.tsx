@@ -10,6 +10,7 @@ export default async function InventoryPage() {
       sku: true,
       currentStock: true,
       lowStockAlert: true,
+      tracksSerial: true,
       locationStocks: {
         include: { location: true }
       }

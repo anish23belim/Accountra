@@ -137,7 +137,7 @@ export async function updateStock(id: string, newStock: number, locationId?: str
   }
 }
 
-export async function transferStock(productId: string, fromLocationId: string, toLocationId: string, quantity: number) {
+export async function transferStock(productId: string, fromLocationId: string, toLocationId: string, quantity: number, serialNumbers?: string[]) {
   try {
     if (fromLocationId === toLocationId) return { success: false, error: "Cannot transfer to the same location" };
     if (quantity <= 0) return { success: false, error: "Quantity must be greater than 0" };
@@ -148,6 +148,30 @@ export async function transferStock(productId: string, fromLocationId: string, t
 
     if (!fromStock || fromStock.quantity < quantity) {
       return { success: false, error: "Insufficient stock in source location" };
+    }
+
+    if (serialNumbers && serialNumbers.length > 0) {
+      if (serialNumbers.length !== quantity) {
+        return { success: false, error: "Number of serials provided must match quantity to transfer" };
+      }
+      
+      const serials = await prisma.serialNumber.findMany({
+        where: {
+          serialNum: { in: serialNumbers },
+          productId: productId,
+          locationId: fromLocationId,
+          status: "AVAILABLE"
+        }
+      });
+      
+      if (serials.length !== quantity) {
+        return { success: false, error: "One or more serial numbers are invalid or not present in the source location." };
+      }
+
+      await prisma.serialNumber.updateMany({
+        where: { serialNum: { in: serialNumbers } },
+        data: { locationId: toLocationId }
+      });
     }
 
     // Decrement from source
