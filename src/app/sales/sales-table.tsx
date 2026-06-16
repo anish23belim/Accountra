@@ -50,7 +50,7 @@ type Invoice = {
   }>;
 };
 
-export function SalesTable({ initialData, settings }: { initialData: Invoice[], settings?: any }) {
+export function SalesTable({ initialData, settings, onSearchChange }: { initialData: Invoice[]; settings?: any; onSearchChange?: (value: string) => void; }) {
   const [invoices, setInvoices] = useState<Invoice[]>(initialData);
   const [searchQuery, setSearchQuery] = useState("");
   
@@ -312,7 +312,11 @@ export function SalesTable({ initialData, settings }: { initialData: Invoice[], 
             type="search"
             placeholder="Search invoices..."
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onChange={(e) => {
+              const val = e.target.value;
+              setSearchQuery(val);
+              if (onSearchChange) onSearchChange(val);
+            }}
             className="w-full pl-8 bg-white"
           />
         </div>
