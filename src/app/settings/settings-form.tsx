@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { updateCompanySettings } from "@/app/actions/settings";
+import { resetTransactionData } from "@/app/actions/reset";
 import { Save } from "lucide-react";
 
 export function SettingsForm({ initialData }: { initialData: any }) {
@@ -31,6 +32,24 @@ export function SettingsForm({ initialData }: { initialData: any }) {
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+
+  const handleResetData = async () => {
+    if (confirm("Are you ABSOLUTELY sure? This will delete all Invoices, Purchases, Payments, Expenses and reset Stock to 0. This CANNOT be undone!")) {
+      const secondConfirm = prompt("Type 'RESET' to confirm deletion:");
+      if (secondConfirm === "RESET") {
+        setIsResetting(true);
+        const res = await resetTransactionData();
+        if (res.success) {
+          alert("All transaction data has been completely reset!");
+          window.location.reload();
+        } else {
+          alert("Failed to reset: " + res.error);
+        }
+        setIsResetting(false);
+      }
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -59,6 +78,7 @@ export function SettingsForm({ initialData }: { initialData: any }) {
   };
 
   return (
+    <div className="space-y-6">
     <Card className="max-w-4xl mx-auto">
       <CardHeader>
         <CardTitle className="text-2xl font-bold">Company Features / Settings</CardTitle>
@@ -197,12 +217,42 @@ export function SettingsForm({ initialData }: { initialData: any }) {
               </div>
             </div>
           </div>
-
-          <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={isSubmitting}>
-            {isSubmitting ? "Saving..." : "Save Settings"}
+          
+          <Button type="submit" disabled={isSubmitting} className="w-full h-12 text-lg font-semibold bg-blue-600 hover:bg-blue-700">
+            <Save className="mr-2 h-5 w-5" />
+            {isSubmitting ? "Saving Company Details..." : "Save Company Details"}
           </Button>
         </form>
       </CardContent>
     </Card>
+
+    <Card className="max-w-4xl mx-auto mt-8 border-red-200">
+      <CardHeader className="bg-red-50 rounded-t-lg">
+        <CardTitle className="text-xl font-bold text-red-600">Danger Zone</CardTitle>
+        <CardDescription className="text-red-700">
+          Destructive actions that cannot be undone.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="pt-6">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+          <div>
+            <h4 className="font-semibold text-slate-900">Reset All Transactions</h4>
+            <p className="text-sm text-slate-500">
+              This will permanently delete all your Invoices, Purchases, Expenses, Payments, and Serial Numbers. 
+              Stock will be set to 0. Party balances will be reset to Opening Balances.
+            </p>
+          </div>
+          <Button 
+            variant="destructive" 
+            disabled={isResetting}
+            onClick={handleResetData}
+            className="shrink-0"
+          >
+            {isResetting ? "Resetting Data..." : "Delete All Transactions"}
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+    </div>
   );
 }
