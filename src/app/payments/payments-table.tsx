@@ -326,15 +326,14 @@ export function PaymentsTable({
                 }
               </select>
             </div>
-            {dueBills.length > 0 && (
               <div className="space-y-2 bg-slate-50 p-3 rounded-md border">
-                <Label className="text-blue-700">Pending Bills (Select to auto-fill amount)</Label>
+                <Label className="text-blue-700">Applied Against</Label>
                 <select 
                   className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
                   value={selectedBillId}
                   onChange={handleBillSelect}
                 >
-                  <option value="">-- Apply as Advance / On Account --</option>
+                  <option value="">Advance Payment / On Account</option>
                   {dueBills.map(b => (
                     <option key={b.id} value={b.id}>
                       {b.billNumber} | Due: ₹{b.due} (Total: ₹{b.total})
@@ -342,7 +341,6 @@ export function PaymentsTable({
                   ))}
                 </select>
               </div>
-            )}
             <div className="space-y-2">
               <Label>Amount</Label>
               <Input type="number" min="0" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="0.00" />
