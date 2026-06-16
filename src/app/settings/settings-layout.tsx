@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { SettingsForm } from "./settings-form";
 import { LocationsManager } from "./locations-manager";
-import { Building2, MapPin } from "lucide-react";
+import { DataExportManager } from "./data-export-manager";
+import { Building2, MapPin, Download } from "lucide-react";
 
 export function SettingsLayout({ settings }: { settings: any }) {
   const [activeTab, setActiveTab] = useState<string>("");
@@ -32,6 +33,15 @@ export function SettingsLayout({ settings }: { settings: any }) {
               <MapPin className="w-4 h-4" /> 
               Godowns & Branches
             </button>
+            <button 
+              onClick={() => setActiveTab('export')} 
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors ${
+                activeTab === 'export' ? 'bg-blue-50 text-blue-700 shadow-sm border border-blue-100' : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <Download className="w-4 h-4" /> 
+              Export Data / Reports
+            </button>
           </nav>
         </div>
       </aside>
@@ -50,6 +60,11 @@ export function SettingsLayout({ settings }: { settings: any }) {
         {activeTab === 'locations' && (
           <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
             <LocationsManager />
+          </div>
+        )}
+        {activeTab === 'export' && (
+          <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+            <DataExportManager />
           </div>
         )}
       </main>

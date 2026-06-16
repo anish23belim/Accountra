@@ -10,10 +10,17 @@ import type { ExportColumn } from '@/types/export';
  * Mapping of entity name -> Prisma fetch & column definition.
  * Add more entities as needed.
  */
-const entityMap: Record<string, { fetch: () => Promise<any[]>; columns: ExportColumn[]; filename: (format: string) => string }> = {
+const entityMap: Record<string, { fetch: (startDate?: Date, endDate?: Date) => Promise<any[]>; columns: ExportColumn[]; filename: (format: string) => string }> = {
   sales: {
-    fetch: async () => {
+    fetch: async (startDate?: Date, endDate?: Date) => {
+      const whereClause: any = {};
+      if (startDate || endDate) {
+        whereClause.date = {};
+        if (startDate) whereClause.date.gte = startDate;
+        if (endDate) whereClause.date.lte = endDate;
+      }
       const data = await prisma.invoice.findMany({
+        where: whereClause,
         include: { customer: true, items: { include: { product: true } } },
         orderBy: { createdAt: 'desc' },
       });
@@ -46,8 +53,15 @@ const entityMap: Record<string, { fetch: () => Promise<any[]>; columns: ExportCo
     filename: fmt => `sales_${new Date().toISOString().split('T')[0]}.${fmt}`,
   },
   purchases: {
-    fetch: async () => {
+    fetch: async (startDate?: Date, endDate?: Date) => {
+      const whereClause: any = {};
+      if (startDate || endDate) {
+        whereClause.date = {};
+        if (startDate) whereClause.date.gte = startDate;
+        if (endDate) whereClause.date.lte = endDate;
+      }
       const data = await prisma.purchase.findMany({
+        where: whereClause,
         include: { supplier: true },
         orderBy: { createdAt: 'desc' },
       });
@@ -74,7 +88,37 @@ const entityMap: Record<string, { fetch: () => Promise<any[]>; columns: ExportCo
     ],
     filename: fmt => `purchases_${new Date().toISOString().split('T')[0]}.${fmt}`,
   },
-  // Add other entities (expenses, payments, inventory, customers, suppliers) similarly.
+  expenses: {
+    fetch: async (startDate?: Date, endDate?: Date) => {
+      const whereClause: any = {};
+      if (startDate || endDate) {
+        whereClause.date = {};
+        if (startDate) whereClause.date.gte = startDate;
+        if (endDate) whereClause.date.lte = endDate;
+      }
+      const data = await prisma.expense.findMany({
+        where: whereClause,
+        orderBy: { createdAt: 'desc' },
+      });
+      return data.map(e => ({
+        id: e.id,
+        date: e.date?.toISOString().split('T')[0] ?? '',
+        category: e.category,
+        description: e.description ?? '',
+        amount: e.amount,
+        paymentMethod: e.paymentMethod,
+      }));
+    },
+    columns: [
+      { header: 'ID', accessor: 'id' },
+      { header: 'Date', accessor: 'date' },
+      { header: 'Category', accessor: 'category' },
+      { header: 'Description', accessor: 'description' },
+      { header: 'Amount', accessor: 'amount' },
+      { header: 'Payment Method', accessor: 'paymentMethod' },
+    ],
+    filename: fmt => `expenses_${new Date().toISOString().split('T')[0]}.${fmt}`,
+  },
 };
 
 export async function GET(request: Request) {
@@ -93,12 +137,25 @@ export async function GET(request: Request) {
   }
 
   const { fetch, columns, filename } = entityMap[entity];
-  let data = await fetch();
+  
+  const startDateStr = url.searchParams.get('startDate');
+  const endDateStr = url.searchParams.get('endDate');
+  
+  const startDate = startDateStr ? new Date(startDateStr) : undefined;
+  const endDate = endDateStr ? new Date(endDateStr) : undefined;
+  
+  if (endDate) {
+    endDate.setHours(23, 59, 59, 999);
+  }
+
+  let data = await fetch(startDate, endDate);
+  
   const search = url.searchParams.get('search')?.toLowerCase() ?? '';
   if (search) {
     data = data.filter((row: any) =>
       (row.number?.toString().toLowerCase().includes(search) ||
-       row.customer?.toString().toLowerCase().includes(search))
+       row.customer?.toString().toLowerCase().includes(search) ||
+       row.supplier?.toString().toLowerCase().includes(search))
     );
   }
 
