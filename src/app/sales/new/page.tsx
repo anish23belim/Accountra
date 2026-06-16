@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { prisma } from "@/lib/auth";
 import { CreateInvoiceForm } from "./create-invoice-form";
 
@@ -23,3 +24,4 @@ export default async function NewInvoicePage() {
     </div>
   );
 }
+

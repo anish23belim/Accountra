@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { prisma } from "@/lib/auth";
 import { PurchasesTable } from "./purchases-table";
 
@@ -24,3 +25,4 @@ export default async function PurchasesPage() {
     </div>
   );
 }
+

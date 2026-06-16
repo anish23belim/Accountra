@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { prisma } from "@/lib/auth";
 import { InventoryTable } from "./inventory-table";
 
@@ -23,3 +24,4 @@ export default async function InventoryPage() {
 
   return <InventoryTable products={products} locations={locations} />;
 }
+

@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import SalesWrapper from './SalesWrapper';
 import { prisma } from '@/lib/auth';
 
@@ -36,3 +37,4 @@ export default async function SalesPage() {
 
   return <SalesWrapper initialInvoices={invoices} settings={settings} />;
 }
+

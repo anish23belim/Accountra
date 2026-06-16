@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { ProductTable } from "./product-table";
 import { prisma } from "@/lib/auth";
 
@@ -12,3 +13,4 @@ export default async function ProductsPage() {
     </div>
   );
 }
+
