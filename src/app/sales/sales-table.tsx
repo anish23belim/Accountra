@@ -2,10 +2,9 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, FileText, Trash2, MessageCircle } from "lucide-react";
+import { Search, FileText, Trash2, MessageCircle } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import Link from "next/link";
 import {
   Table,
   TableBody,
@@ -296,15 +295,6 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
 
   return (
     <>
-      <div className="flex items-center justify-between">
-        <h2 className="text-3xl font-bold tracking-tight">Sales & Invoices</h2>
-        <Link href="/sales/new">
-          <Button className="bg-blue-600 hover:bg-blue-700">
-            <Plus className="mr-2 h-4 w-4" /> Create Invoice
-          </Button>
-        </Link>
-      </div>
-
       <div className="flex items-center gap-2 py-4">
         <div className="relative w-full max-w-sm">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
