@@ -33,6 +33,7 @@ type Product = {
   purchasePrice: number;
   sellingPrice: number;
   tracksSerial?: boolean;
+  availableSerials?: string[];
 };
 
 export function ProductTable({ initialData }: { initialData: Product[] }) {
@@ -42,6 +43,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [viewSerialsProduct, setViewSerialsProduct] = useState<Product | null>(null);
   
   const [formData, setFormData] = useState<{name: string, sku: string, category: string, currentStock: number, purchasePrice: number, sellingPrice: number, tracksSerial: boolean, serialNumbers: string[]}>({ 
     name: "", sku: "", category: "", currentStock: 0, purchasePrice: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] 
@@ -50,7 +52,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
   
   const filteredProducts = products.filter(p => 
     p.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
-    (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase()))
+    (p.sku && p.sku.toLowerCase().includes(searchQuery.toLowerCase())) ||
+    (p.availableSerials && p.availableSerials.some(s => s.toLowerCase().includes(searchQuery.toLowerCase())))
   );
 
   const handleOpenAdd = () => {
@@ -149,7 +152,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search products..."
+            placeholder="Search products or serial numbers..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-8 bg-white"
@@ -186,6 +189,11 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                 <TableCell className="text-right font-medium text-slate-500">₹{(product.purchasePrice || 0).toFixed(2)}</TableCell>
                 <TableCell className="text-right font-medium text-slate-900">₹{product.sellingPrice.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
+                  {product.tracksSerial && product.availableSerials && product.availableSerials.length > 0 && (
+                    <Button onClick={() => setViewSerialsProduct(product)} variant="ghost" size="sm" className="text-purple-600 mr-2 border border-purple-200 h-7 px-2 text-xs">
+                      View Serials
+                    </Button>
+                  )}
                   <Button onClick={() => handleOpenEdit(product)} variant="ghost" size="sm" className="text-blue-600">Edit</Button>
                   <Button onClick={() => handleDeleteClick(product)} variant="ghost" size="sm" className="text-red-600 hover:text-red-700">Delete</Button>
                 </TableCell>
@@ -221,10 +229,15 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                   <span className="font-medium ml-1">{product.currentStock}</span>
                 )}
               </div>
-              <div className="flex gap-2">
-                <Button onClick={() => handleOpenEdit(product)} variant="outline" size="sm" className="text-blue-600 border-blue-200">Edit</Button>
-                <Button onClick={() => handleDeleteClick(product)} variant="outline" size="sm" className="text-red-600 border-red-200">Delete</Button>
-              </div>
+                <div className="flex gap-2">
+                  {product.tracksSerial && product.availableSerials && product.availableSerials.length > 0 && (
+                    <Button onClick={() => setViewSerialsProduct(product)} variant="ghost" size="sm" className="text-purple-600 border border-purple-200 h-7 px-2 text-xs">
+                      Serials
+                    </Button>
+                  )}
+                  <Button onClick={() => handleOpenEdit(product)} variant="ghost" size="sm" className="text-blue-600 h-8">Edit</Button>
+                  <Button onClick={() => handleDeleteClick(product)} variant="ghost" size="sm" className="text-red-600 h-8">Delete</Button>
+                </div>
             </div>
           </div>
         ))}
@@ -347,7 +360,8 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
             <DialogTitle className="text-red-600">Delete Product</DialogTitle>
           </DialogHeader>
           <div className="py-4">
-            Are you sure you want to delete <strong>{editingProduct?.name}</strong>? This action cannot be undone.
+            Are you sure you want to delete <strong>{editingProduct?.name}</strong>? 
+            This action cannot be undone.
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
@@ -355,6 +369,36 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={!!viewSerialsProduct} onOpenChange={(open) => !open && setViewSerialsProduct(null)}>
+        <DialogContent className="sm:max-w-[500px] bg-white max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Available Serial Numbers</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <h3 className="font-semibold text-lg mb-2">{viewSerialsProduct?.name}</h3>
+            <div className="text-sm text-slate-500 mb-4">Total Available: {viewSerialsProduct?.availableSerials?.length || 0}</div>
+            
+            {viewSerialsProduct?.availableSerials && viewSerialsProduct.availableSerials.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {viewSerialsProduct.availableSerials.map((serial, idx) => (
+                  <Badge key={idx} variant="outline" className="bg-slate-50 border-slate-300 px-3 py-1 text-sm font-mono">
+                    {serial}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-8 text-slate-500 bg-slate-50 rounded-md">
+                No serial numbers available in stock.
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setViewSerialsProduct(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
+
