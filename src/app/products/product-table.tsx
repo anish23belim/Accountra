@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Search, Plus } from "lucide-react";
+import { Search, Plus, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -44,6 +44,7 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [viewSerialsProduct, setViewSerialsProduct] = useState<Product | null>(null);
+  const [visibleStockIds, setVisibleStockIds] = useState<Record<string, boolean>>({});
   
   const [formData, setFormData] = useState<{name: string, sku: string, category: string, currentStock: number, purchasePrice: number, sellingPrice: number, tracksSerial: boolean, serialNumbers: string[]}>({ 
     name: "", sku: "", category: "", currentStock: 0, purchasePrice: 0, sellingPrice: 0, tracksSerial: false, serialNumbers: [] 
@@ -138,10 +139,21 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
     }
   };
 
+  const toggleStockVisibility = (id: string) => {
+    setVisibleStockIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const totalStockCount = products.reduce((acc, p) => acc + p.currentStock, 0);
+
   return (
     <>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Products & Services</h2>
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Products & Services</h2>
+          <div className="text-sm text-slate-500 mt-1">
+            Total Stock Quantity: <span className="font-semibold text-slate-700">{totalStockCount}</span>
+          </div>
+        </div>
         <Button onClick={handleOpenAdd} className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto">
           <Plus className="mr-2 h-4 w-4" /> Add Item
         </Button>
@@ -180,10 +192,16 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
                 <TableCell>{product.sku || "-"}</TableCell>
                 <TableCell>{product.category || "-"}</TableCell>
                 <TableCell className="text-right">
-                  {product.currentStock <= 5 ? (
-                    <Badge variant="destructive" className="ml-auto">{product.currentStock}</Badge>
+                  {visibleStockIds[product.id] ? (
+                    product.currentStock <= 5 ? (
+                      <Badge variant="destructive" className="ml-auto">{product.currentStock}</Badge>
+                    ) : (
+                      <span className="font-medium">{product.currentStock}</span>
+                    )
                   ) : (
-                    <span className="font-medium">{product.currentStock}</span>
+                    <Button variant="ghost" size="sm" onClick={() => toggleStockVisibility(product.id)} className="h-6 px-2 text-slate-400 hover:text-slate-700">
+                      <EyeOff className="h-4 w-4" />
+                    </Button>
                   )}
                 </TableCell>
                 <TableCell className="text-right font-medium text-slate-500">₹{(product.purchasePrice || 0).toFixed(2)}</TableCell>
@@ -221,14 +239,21 @@ export function ProductTable({ initialData }: { initialData: Product[] }) {
             <div className="text-sm text-slate-500">
               SKU: {product.sku || "-"} • Cat: {product.category || "-"}
             </div>
-            <div className="flex justify-between items-center pt-2 border-t mt-2">
-              <div className="text-sm">
-                Stock: {product.currentStock <= 5 ? (
-                  <Badge variant="destructive" className="ml-1">{product.currentStock}</Badge>
-                ) : (
-                  <span className="font-medium ml-1">{product.currentStock}</span>
-                )}
-              </div>
+              <div className="flex justify-between items-center pt-2 border-t mt-2">
+                <div className="text-sm flex items-center gap-2">
+                  Stock: 
+                  {visibleStockIds[product.id] ? (
+                    product.currentStock <= 5 ? (
+                      <Badge variant="destructive">{product.currentStock}</Badge>
+                    ) : (
+                      <span className="font-medium">{product.currentStock}</span>
+                    )
+                  ) : (
+                    <Button variant="ghost" size="sm" onClick={() => toggleStockVisibility(product.id)} className="h-6 px-2 text-slate-400 hover:text-slate-700">
+                      <EyeOff className="h-4 w-4" />
+                    </Button>
+                  )}
+                </div>
                 <div className="flex gap-2">
                   {product.tracksSerial && product.availableSerials && product.availableSerials.length > 0 && (
                     <Button onClick={() => setViewSerialsProduct(product)} variant="ghost" size="sm" className="text-purple-600 border border-purple-200 h-7 px-2 text-xs">

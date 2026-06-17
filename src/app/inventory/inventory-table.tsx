@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Plus, Search, ArrowRightLeft } from "lucide-react";
+import { Plus, Search, ArrowRightLeft, Eye, EyeOff } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -39,6 +39,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [newStockStr, setNewStockStr] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [visibleStockIds, setVisibleStockIds] = useState<Record<string, boolean>>({});
 
   // For Global Stock Adjustment
   const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
@@ -127,10 +128,21 @@ export function InventoryTable({ products, locations }: { products: Product[], l
     setIsUpdating(false);
   };
 
+  const toggleStockVisibility = (id: string) => {
+    setVisibleStockIds(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const totalStockCount = products.reduce((acc, p) => acc + getDisplayStock(p), 0);
+
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Inventory Management</h2>
+        <div>
+          <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Inventory Management</h2>
+          <div className="text-sm text-slate-500 mt-1">
+            Total Stock Quantity: <span className="font-semibold text-slate-700">{totalStockCount}</span>
+          </div>
+        </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
           {locations && locations.length > 1 && (
             <Button variant="outline" className="flex-1 min-w-[120px] sm:flex-none text-purple-600 border-purple-200 hover:bg-purple-50" onClick={() => {
@@ -221,8 +233,16 @@ export function InventoryTable({ products, locations }: { products: Product[], l
                 <TableRow key={item.id}>
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.sku || '-'}</TableCell>
-                  <TableCell className={`text-right font-bold ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
-                    {displayStock}
+                  <TableCell className="text-right">
+                    {visibleStockIds[item.id] ? (
+                      <span className={`font-bold ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
+                        {displayStock}
+                      </span>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => toggleStockVisibility(item.id)} className="h-6 px-2 text-slate-400 hover:text-slate-700 ml-auto flex">
+                        <EyeOff className="h-4 w-4" />
+                      </Button>
+                    )}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">{item.lowStockAlert}</TableCell>
                   <TableCell>
@@ -265,9 +285,17 @@ export function InventoryTable({ products, locations }: { products: Product[], l
               <div className="flex justify-between items-center pt-2 border-t mt-2">
                 <div className="text-sm flex flex-col">
                   <span className="text-muted-foreground">Current Stock</span>
-                  <span className={`font-bold text-lg ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
-                    {displayStock} <span className="text-sm font-normal text-slate-500 ml-1">(Min: {item.lowStockAlert})</span>
-                  </span>
+                  <div className="flex items-center gap-2 mt-1">
+                    {visibleStockIds[item.id] ? (
+                      <span className={`font-bold text-lg ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
+                        {displayStock} <span className="text-sm font-normal text-slate-500 ml-1">(Min: {item.lowStockAlert})</span>
+                      </span>
+                    ) : (
+                      <Button variant="ghost" size="sm" onClick={() => toggleStockVisibility(item.id)} className="h-6 px-2 text-slate-400 hover:text-slate-700">
+                        <EyeOff className="h-4 w-4" /> Show Stock
+                      </Button>
+                    )}
+                  </div>
                 </div>
                 <Button variant="outline" size="sm" className="text-blue-600 border-blue-200" onClick={() => handleUpdateClick(item)}>Update</Button>
               </div>
