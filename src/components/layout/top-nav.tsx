@@ -21,6 +21,7 @@ import {
   Settings,
   Menu,
   Plus,
+  Banknote,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -44,6 +45,7 @@ const navItems = [
   { name: "Purchases Returns", href: "/purchases/returns", icon: ShoppingBag },
   { name: "Expenses", href: "/expenses", icon: Receipt },
   { name: "Payments", href: "/payments", icon: CreditCard },
+  { name: "Cash Book", href: "/cashbook", icon: Banknote },
   { name: "Reports", href: "/reports", icon: FileBarChart },
   { name: "GST & Tax", href: "/tax", icon: Landmark },
   { name: "Settings", href: "/settings", icon: Settings },

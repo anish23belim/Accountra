@@ -74,7 +74,10 @@ export type InvoiceItemInput = {
 };
 
 export async function createInvoice(data: {
-  customerId: string;
+  customerId?: string;
+  isCashSale?: boolean;
+  cashCustomerName?: string;
+  cashCustomerPhone?: string;
   locationId?: string;
   date?: string;
   narration?: string;
@@ -163,6 +166,25 @@ export async function createInvoice(data: {
       }
     }
 
+    let actualCustomerId = data.customerId;
+    let finalNarration = data.narration;
+
+    if (data.isCashSale && data.cashCustomerName) {
+      const newCustomer = await prisma.customer.create({
+        data: {
+          name: data.cashCustomerName,
+          phone: data.cashCustomerPhone || null,
+          customerType: "Customer",
+        }
+      });
+      actualCustomerId = newCustomer.id;
+      finalNarration = finalNarration ? `${finalNarration} (Cash Sale - ${data.cashCustomerName})` : `Cash Sale - ${data.cashCustomerName}`;
+    }
+
+    if (!actualCustomerId) {
+      return { success: false, error: "Customer information is required." };
+    }
+
     // Generate a simple invoice number based on current time
     const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
     
@@ -170,9 +192,9 @@ export async function createInvoice(data: {
     const invoice = await prisma.invoice.create({
       data: {
         invoiceNumber,
-        customerId: data.customerId,
+        customerId: actualCustomerId,
         date: data.date ? new Date(data.date) : undefined,
-        narration: data.narration,
+        narration: finalNarration,
         transporter: data.transporter,
         vehicleNo: data.vehicleNo,
         ewayBill: data.ewayBill,
@@ -182,7 +204,7 @@ export async function createInvoice(data: {
         freightCharge: data.freightCharge,
         taxAmount: data.taxAmount,
         totalAmount: data.totalAmount,
-        status: "UNPAID",
+        status: data.isCashSale ? "PAID" : "UNPAID",
         locationId: data.locationId || undefined,
         items: {
           create: data.items.map(item => ({
@@ -199,14 +221,40 @@ export async function createInvoice(data: {
     });
 
     // Update customer balance (increase balance because they owe money)
+    // If it's a cash sale, the balance increases here, but we will immediately create a payment to decrease it
     await prisma.customer.update({
-      where: { id: data.customerId },
+      where: { id: actualCustomerId },
       data: {
         currentBalance: {
           increment: data.totalAmount
         }
       }
     });
+
+    // Handle Cash Sale Payment
+    if (data.isCashSale) {
+      await prisma.payment.create({
+        data: {
+          paymentNumber: `PAY-${Date.now().toString().slice(-6)}`,
+          date: data.date ? new Date(data.date) : new Date(),
+          amount: data.totalAmount,
+          method: "Cash",
+          reference: `Cash Payment for Invoice ${invoiceNumber}`,
+          customerId: actualCustomerId,
+          invoiceId: invoice.id
+        }
+      });
+
+      // Decrease customer balance immediately because it's paid
+      await prisma.customer.update({
+        where: { id: actualCustomerId },
+        data: {
+          currentBalance: {
+            decrement: data.totalAmount
+          }
+        }
+      });
+    }
 
     // Reduce product stock and location stock
     for (const item of data.items) {

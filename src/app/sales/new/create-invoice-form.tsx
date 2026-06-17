@@ -19,6 +19,10 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
   
   const [localCustomers, setLocalCustomers] = useState(customers);
   const [customerId, setCustomerId] = useState("");
+  const [isCashSale, setIsCashSale] = useState(false);
+  const [cashCustomerName, setCashCustomerName] = useState("");
+  const [cashCustomerPhone, setCashCustomerPhone] = useState("");
+  
   const [locationId, setLocationId] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
   const [narration, setNarration] = useState("");
@@ -132,7 +136,11 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
 
   const handleSubmit = async () => {
     setBackendError("");
-    if (!customerId) return alert("Please select a customer");
+    if (isCashSale) {
+      if (!cashCustomerName) return alert("Please enter Customer Name for cash sale");
+    } else {
+      if (!customerId) return alert("Please select a customer");
+    }
     if (items.some(i => !i.productId || i.quantity <= 0)) return alert("Please fill all items correctly");
     
     // Frontend Stock Validation
@@ -156,7 +164,10 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
     }));
 
     const res = await createInvoice({
-      customerId,
+      customerId: isCashSale ? undefined : customerId,
+      isCashSale,
+      cashCustomerName: isCashSale ? cashCustomerName : undefined,
+      cashCustomerPhone: isCashSale ? cashCustomerPhone : undefined,
       locationId: locationId || undefined,
       date,
       narration,
@@ -196,8 +207,21 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
           <div className="grid md:grid-cols-2 gap-8">
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>Party (Sundry Debtor)</Label>
-                <select 
+                <Label>Sale Type</Label>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2">
+                    <input type="radio" checked={!isCashSale} onChange={() => setIsCashSale(false)} /> Credit Sale
+                  </label>
+                  <label className="flex items-center gap-2">
+                    <input type="radio" checked={isCashSale} onChange={() => setIsCashSale(true)} /> Cash Sale
+                  </label>
+                </div>
+              </div>
+
+              {!isCashSale ? (
+                <div className="space-y-2">
+                  <Label>Party (Sundry Debtor)</Label>
+                  <select 
                   className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                   value={customerId}
                   onChange={handleCustomerChange}
@@ -209,6 +233,26 @@ export function CreateInvoiceForm({ customers, products, locations }: { customer
                   ))}
                 </select>
               </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Cash Customer Name</Label>
+                    <Input 
+                      placeholder="e.g. John Doe" 
+                      value={cashCustomerName} 
+                      onChange={(e) => setCashCustomerName(e.target.value)} 
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Phone Number</Label>
+                    <Input 
+                      placeholder="e.g. 9876543210" 
+                      value={cashCustomerPhone} 
+                      onChange={(e) => setCashCustomerPhone(e.target.value)} 
+                    />
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>Godown / Branch (Location)</Label>
                 <select 
