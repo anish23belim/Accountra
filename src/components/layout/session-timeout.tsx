@@ -19,11 +19,6 @@ export function SessionTimeout() {
       return;
     }
 
-    // Initialize the last activity if not present
-    if (!localStorage.getItem(STORAGE_KEY)) {
-      localStorage.setItem(STORAGE_KEY, Date.now().toString());
-    }
-
     const checkInactivity = () => {
       const lastActivityStr = localStorage.getItem(STORAGE_KEY);
       if (lastActivityStr) {
@@ -32,9 +27,21 @@ export function SessionTimeout() {
           // User has been inactive for too long, log them out
           localStorage.removeItem(STORAGE_KEY);
           signOut({ callbackUrl: "/login" });
+          return true; // Returned true means they were logged out
         }
       }
+      return false;
     };
+
+    // Immediately check on mount (in case they opened the tab after a long time)
+    if (checkInactivity()) {
+      return; // Already logged out, don't set up listeners
+    }
+
+    // Initialize the last activity if not present
+    if (!localStorage.getItem(STORAGE_KEY)) {
+      localStorage.setItem(STORAGE_KEY, Date.now().toString());
+    }
 
     // Check every 10 seconds
     intervalRef.current = setInterval(checkInactivity, 10000);
@@ -62,6 +69,11 @@ export function SessionTimeout() {
     // Throttle the activity update to avoid hitting localStorage too often
     let throttleTimer = false;
     const activityHandler = () => {
+      // First check if they should ALREADY be logged out before updating the timer
+      if (checkInactivity()) {
+        return; 
+      }
+      
       if (!throttleTimer) {
         localStorage.setItem(STORAGE_KEY, Date.now().toString());
         throttleTimer = true;
