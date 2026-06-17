@@ -39,7 +39,7 @@ export function InventoryTable({ products, locations }: { products: Product[], l
   const [editProduct, setEditProduct] = useState<Product | null>(null);
   const [newStockStr, setNewStockStr] = useState("");
   const [isUpdating, setIsUpdating] = useState(false);
-  const [visibleStockIds, setVisibleStockIds] = useState<Record<string, boolean>>({});
+  const [showAllStock, setShowAllStock] = useState(false);
 
   // For Global Stock Adjustment
   const [isAdjustmentOpen, setIsAdjustmentOpen] = useState(false);
@@ -128,10 +128,6 @@ export function InventoryTable({ products, locations }: { products: Product[], l
     setIsUpdating(false);
   };
 
-  const toggleStockVisibility = (id: string) => {
-    setVisibleStockIds(prev => ({ ...prev, [id]: !prev[id] }));
-  };
-
   const totalStockCount = products.reduce((acc, p) => acc + getDisplayStock(p), 0);
 
   return (
@@ -139,8 +135,11 @@ export function InventoryTable({ products, locations }: { products: Product[], l
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h2 className="text-2xl sm:text-3xl font-bold tracking-tight">Inventory Management</h2>
-          <div className="text-sm text-slate-500 mt-1">
-            Total Stock Quantity: <span className="font-semibold text-slate-700">{totalStockCount}</span>
+          <div className="text-sm text-slate-500 mt-1 flex items-center gap-2">
+            Total Stock Quantity: <span className="font-semibold text-slate-700">{showAllStock ? totalStockCount : "***"}</span>
+            <Button variant="ghost" size="sm" onClick={() => setShowAllStock(!showAllStock)} className="h-6 px-2 text-slate-400 hover:text-slate-700">
+              {showAllStock ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
+            </Button>
           </div>
         </div>
         <div className="flex flex-wrap gap-2 w-full sm:w-auto">
@@ -234,14 +233,12 @@ export function InventoryTable({ products, locations }: { products: Product[], l
                   <TableCell className="font-medium">{item.name}</TableCell>
                   <TableCell>{item.sku || '-'}</TableCell>
                   <TableCell className="text-right">
-                    {visibleStockIds[item.id] ? (
+                    {showAllStock ? (
                       <span className={`font-bold ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
                         {displayStock}
                       </span>
                     ) : (
-                      <Button variant="ghost" size="sm" onClick={() => toggleStockVisibility(item.id)} className="h-6 px-2 text-slate-400 hover:text-slate-700 ml-auto flex">
-                        <EyeOff className="h-4 w-4" />
-                      </Button>
+                      <span className="text-slate-400">***</span>
                     )}
                   </TableCell>
                   <TableCell className="text-right text-muted-foreground">{item.lowStockAlert}</TableCell>
@@ -286,14 +283,12 @@ export function InventoryTable({ products, locations }: { products: Product[], l
                 <div className="text-sm flex flex-col">
                   <span className="text-muted-foreground">Current Stock</span>
                   <div className="flex items-center gap-2 mt-1">
-                    {visibleStockIds[item.id] ? (
+                    {showAllStock ? (
                       <span className={`font-bold text-lg ${displayStock === 0 ? 'text-red-600' : displayStock < item.lowStockAlert ? 'text-yellow-600' : 'text-slate-900'}`}>
                         {displayStock} <span className="text-sm font-normal text-slate-500 ml-1">(Min: {item.lowStockAlert})</span>
                       </span>
                     ) : (
-                      <Button variant="ghost" size="sm" onClick={() => toggleStockVisibility(item.id)} className="h-6 px-2 text-slate-400 hover:text-slate-700">
-                        <EyeOff className="h-4 w-4" /> Show Stock
-                      </Button>
+                      <span className="text-slate-400 text-lg">***</span>
                     )}
                   </div>
                 </div>
