@@ -25,8 +25,21 @@ export default async function Dashboard() {
     });
   });
 
+  const returnsWithItems = await prisma.salesReturn.findMany({
+    include: { items: { include: { product: true } } }
+  });
+
+  returnsWithItems.forEach(ret => {
+    totalSales -= ret.totalAmount;
+    ret.items.forEach(item => {
+      const costPrice = item.product?.purchasePrice || 0;
+      totalCOGS -= costPrice * item.quantity;
+    });
+  });
+
   const totalPurchasesAggr = await prisma.purchase.aggregate({ _sum: { totalAmount: true } });
-  const totalPurchases = totalPurchasesAggr._sum.totalAmount || 0;
+  const purchaseReturnsAggr = await prisma.purchaseReturn.aggregate({ _sum: { totalAmount: true } });
+  const totalPurchases = (totalPurchasesAggr._sum.totalAmount || 0) - (purchaseReturnsAggr._sum.totalAmount || 0);
 
   const totalExpensesAggr = await prisma.expense.aggregate({ _sum: { amount: true } });
   const totalExpenses = totalExpensesAggr._sum.amount || 0;
@@ -62,12 +75,12 @@ export default async function Dashboard() {
   const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
 
   // Calculate actual Bank/Cash Balance based on Payments
-  const allPayments = await prisma.payment.findMany({ select: { amount: true, customerId: true, supplierId: true } });
+  const allPayments = await prisma.payment.findMany({ select: { amount: true, type: true } });
   let totalReceived = 0;
   let totalSent = 0;
   allPayments.forEach(p => {
-    if (p.customerId) totalReceived += p.amount;
-    if (p.supplierId) totalSent += p.amount;
+    if (p.type === "IN") totalReceived += p.amount;
+    if (p.type === "OUT") totalSent += p.amount;
   });
   
   const bankBalance = totalReceived - totalSent - totalExpenses;
@@ -88,7 +101,18 @@ export default async function Dashboard() {
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const chartData = monthNames.map((name, index) => {
     const monthInvoices = invoicesWithItems.filter(i => i.date.getFullYear() === currentYear && i.date.getMonth() === index);
-    const monthSales = monthInvoices.reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const monthSalesReturns = returnsWithItems.filter(r => r.date.getFullYear() === currentYear && r.date.getMonth() === index);
+    const monthSalesReturnsAmount = monthSalesReturns.reduce((acc, curr) => acc + curr.totalAmount, 0);
+    const monthSalesReturnsCOGS = monthSalesReturns.reduce((acc, curr) => {
+      let cogs = 0;
+      curr.items.forEach(item => {
+        const costPrice = item.product?.purchasePrice || 0;
+        cogs += costPrice * item.quantity;
+      });
+      return acc + cogs;
+    }, 0);
+
+    const monthSales = monthInvoices.reduce((acc, curr) => acc + curr.totalAmount, 0) - monthSalesReturnsAmount;
     
     const monthCOGS = monthInvoices.reduce((acc, curr) => {
       let cogs = 0;
@@ -97,7 +121,7 @@ export default async function Dashboard() {
         cogs += costPrice * item.quantity;
       });
       return acc + cogs;
-    }, 0);
+    }, 0) - monthSalesReturnsCOGS;
 
     const monthPurchases = allPurchases.filter(p => p.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
     const monthExpenses = allExpenses.filter(e => e.date.getMonth() === index).reduce((acc, curr) => acc + curr.amount, 0);
