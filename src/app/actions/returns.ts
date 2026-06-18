@@ -5,9 +5,10 @@ import { revalidatePath } from "next/cache";
 
 export async function createSalesReturn(data: any) {
   try {
+    const returnNumber = data.returnNumber || `SR-${Date.now().toString().slice(-6)}`;
     const sr = await prisma.salesReturn.create({
       data: {
-        returnNumber: data.returnNumber,
+        returnNumber: returnNumber,
         date: data.date ? new Date(data.date) : new Date(),
         customerId: data.customerId,
         invoiceId: data.invoiceId || null,
@@ -89,9 +90,10 @@ export async function createSalesReturn(data: any) {
 
 export async function createPurchaseReturn(data: any) {
   try {
+    const returnNumber = data.returnNumber || `PR-${Date.now().toString().slice(-6)}`;
     const pr = await prisma.purchaseReturn.create({
       data: {
-        returnNumber: data.returnNumber,
+        returnNumber: returnNumber,
         date: data.date ? new Date(data.date) : new Date(),
         supplierId: data.supplierId,
         purchaseId: data.purchaseId || null,
