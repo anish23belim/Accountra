@@ -21,6 +21,7 @@ export default async function SalesPage() {
     amount: inv.totalAmount,
     taxAmount: inv.taxAmount,
     status: inv.status,
+    narration: inv.narration || '',
     transporter: inv.transporter || '',
     vehicleNo: inv.vehicleNo || '',
     ewayBill: inv.ewayBill || '',

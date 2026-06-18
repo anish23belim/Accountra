@@ -37,6 +37,7 @@ type Invoice = {
   amount: number;
   taxAmount?: number;
   status: string;
+  narration?: string;
   transporter?: string;
   vehicleNo?: string;
   ewayBill?: string;
@@ -61,9 +62,12 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     inv.customer.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const getStatusBadge = (status: string) => {
+  const getStatusBadge = (status: string, narration?: string) => {
+    const isCashSale = narration?.toLowerCase().includes("cash sale");
     switch(status) {
-      case "Paid": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Paid</Badge>;
+      case "Paid": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">{isCashSale ? "Paid (Cash)" : "Paid"}</Badge>;
+      case "PAID": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">{isCashSale ? "Paid (Cash)" : "Paid"}</Badge>;
+      case "Paid (Cash)": return <Badge className="bg-green-100 text-green-800 hover:bg-green-100 border-green-200">Paid (Cash)</Badge>;
       case "Overdue": return <Badge variant="destructive">Overdue</Badge>;
       case "Unpaid": return <Badge variant="secondary">Unpaid</Badge>;
       case "Partially Paid": return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100 border-yellow-200">Partial</Badge>;
@@ -80,7 +84,8 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     // Title
     doc.setFontSize(14);
     doc.setFont("helvetica", "bold");
-    doc.text("TAX INVOICE", 105, 16, { align: "center" });
+    const isCashSale = invoice.narration?.toLowerCase().includes("cash sale");
+    doc.text(isCashSale ? "CASH SALE INVOICE" : "TAX INVOICE", 105, 16, { align: "center" });
     doc.line(10, 20, 200, 20); // Horizontal line
 
     // Vertical line splitting Company and Invoice Details
@@ -335,7 +340,7 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
                 </TableCell>
                 <TableCell>{invoice.customer}</TableCell>
                 <TableCell>{invoice.date}</TableCell>
-                <TableCell>{getStatusBadge(invoice.status)}</TableCell>
+                <TableCell>{getStatusBadge(invoice.status, invoice.narration)}</TableCell>
                 <TableCell className="text-right font-medium">₹{invoice.amount.toFixed(2)}</TableCell>
                 <TableCell className="text-right">
                   <Button onClick={() => handleWhatsAppShare(invoice)} variant="ghost" size="sm" title="Share on WhatsApp" className="text-green-600 hover:text-green-700 hover:bg-green-50">
@@ -378,7 +383,7 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
               </div>
               <div className="text-right shrink-0">
                 <div className="font-bold text-lg">₹{invoice.amount.toFixed(2)}</div>
-                <div className="mt-1">{getStatusBadge(invoice.status)}</div>
+                <div className="mt-1">{getStatusBadge(invoice.status, invoice.narration)}</div>
               </div>
             </div>
             
