@@ -37,13 +37,25 @@ export default async function Dashboard() {
   const activeCustomers = await prisma.customer.count();
   const totalSuppliers = await prisma.supplier.count();
 
-  // Pending money owed to us
-  const pendingReceivablesAggr = await prisma.customer.aggregate({ _sum: { currentBalance: true } });
+  // Pending money owed to us (Only positive customer balances)
+  const pendingReceivablesAggr = await prisma.customer.aggregate({ 
+    _sum: { currentBalance: true },
+    where: { currentBalance: { gt: 0 } }
+  });
   const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
 
-  // Pending money we owe
-  const pendingPayablesAggr = await prisma.supplier.aggregate({ _sum: { currentBalance: true } });
-  const pendingPayables = pendingPayablesAggr._sum.currentBalance || 0;
+  // Pending money we owe (Positive supplier balances + Negative customer balances)
+  const pendingPayablesSupplierAggr = await prisma.supplier.aggregate({ 
+    _sum: { currentBalance: true },
+    where: { currentBalance: { gt: 0 } }
+  });
+  
+  const pendingPayablesCustomerAggr = await prisma.customer.aggregate({
+    _sum: { currentBalance: true },
+    where: { currentBalance: { lt: 0 } }
+  });
+  
+  const pendingPayables = (pendingPayablesSupplierAggr._sum.currentBalance || 0) + Math.abs(pendingPayablesCustomerAggr._sum.currentBalance || 0);
 
   // Low stock products
   const products = await prisma.product.findMany();
