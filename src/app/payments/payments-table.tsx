@@ -57,7 +57,7 @@ export function PaymentsTable({
   
   const [isPayModalOpen, setIsPayModalOpen] = useState(false);
   const [payType, setPayType] = useState<"Received" | "Sent">("Received");
-  
+  const [partyType, setPartyType] = useState<"Customer" | "Supplier">("Customer");
   const [selectedPartyId, setSelectedPartyId] = useState("");
   const [amount, setAmount] = useState("");
   const [method, setMethod] = useState("Bank Transfer");
@@ -72,12 +72,12 @@ export function PaymentsTable({
       return;
     }
     const fetchBills = async () => {
-      const bills = await getDueBills(selectedPartyId, payType === "Received" ? "Customer" : "Supplier");
+      const bills = await getDueBills(selectedPartyId, partyType);
       setDueBills(bills);
       setSelectedBillId("");
     };
     fetchBills();
-  }, [selectedPartyId, payType]);
+  }, [selectedPartyId, partyType]);
 
   const handleBillSelect = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const billId = e.target.value;
@@ -98,6 +98,7 @@ export function PaymentsTable({
 
   const handleOpenModal = (type: "Received" | "Sent") => {
     setPayType(type);
+    setPartyType(type === "Received" ? "Customer" : "Supplier");
     setSelectedPartyId("");
     setAmount("");
     setMethod("Bank Transfer");
@@ -108,11 +109,11 @@ export function PaymentsTable({
     if (!selectedPartyId || !amount || Number(amount) <= 0) return alert("Invalid details");
 
     const payload = {
-      amount: Number(amount),
+      amount: parseFloat(amount),
       method,
-      reference: "", // Optional
-      customerId: payType === "Received" ? selectedPartyId : undefined,
-      supplierId: payType === "Sent" ? selectedPartyId : undefined,
+      direction: payType === "Received" ? "IN" : "OUT" as any,
+      customerId: partyType === "Customer" ? selectedPartyId : undefined,
+      supplierId: partyType === "Supplier" ? selectedPartyId : undefined,
       invoiceId: payType === "Received" && selectedBillId ? selectedBillId : undefined,
       purchaseId: payType === "Sent" && selectedBillId ? selectedBillId : undefined,
     };
@@ -309,18 +310,26 @@ export function PaymentsTable({
       <Dialog open={isPayModalOpen} onOpenChange={setIsPayModalOpen}>
         <DialogContent className="sm:max-w-[425px] bg-white">
           <DialogHeader>
-            <DialogTitle>{payType === "Received" ? "Receive Payment (From Customer)" : "Make Payment (To Supplier)"}</DialogTitle>
+            <DialogTitle>{payType === "Received" ? "Receive Payment" : "Make Payment"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-4">
+            <div className="flex gap-4 mb-2">
+              <label className="flex items-center gap-2">
+                <input type="radio" checked={partyType === "Customer"} onChange={() => setPartyType("Customer")} /> Customer
+              </label>
+              <label className="flex items-center gap-2">
+                <input type="radio" checked={partyType === "Supplier"} onChange={() => setPartyType("Supplier")} /> Supplier
+              </label>
+            </div>
             <div className="space-y-2">
-              <Label>{payType === "Received" ? "Customer" : "Supplier"}</Label>
+              <Label>{partyType}</Label>
               <select 
                 className="flex h-10 w-full rounded-md border border-input bg-white px-3 py-2 text-sm"
                 value={selectedPartyId}
                 onChange={(e) => setSelectedPartyId(e.target.value)}
               >
                 <option value="">Select...</option>
-                {payType === "Received" 
+                {partyType === "Customer" 
                   ? customers.map(c => <option key={c.id} value={c.id}>{c.name} (Due: ₹{c.currentBalance})</option>)
                   : suppliers.map(s => <option key={s.id} value={s.id}>{s.name} (Owe: ₹{s.currentBalance})</option>)
                 }

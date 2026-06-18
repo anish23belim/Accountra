@@ -11,6 +11,7 @@ export async function createPayment(data: {
   supplierId?: string;
   invoiceId?: string;
   purchaseId?: string;
+  direction?: 'IN' | 'OUT'; // IN = Received from them, OUT = Paid to them
 }) {
   try {
     const paymentNumber = `PAY-${Date.now().toString().slice(-6)}`;
@@ -28,27 +29,27 @@ export async function createPayment(data: {
       }
     });
 
-    // Reduce customer balance if they paid us
+    // Update customer balance
     if (data.customerId) {
       await prisma.customer.update({
         where: { id: data.customerId },
         data: {
-          currentBalance: {
-            decrement: data.amount
-          }
+          currentBalance: data.direction === 'OUT' 
+            ? { increment: data.amount } 
+            : { decrement: data.amount }
         }
       });
       revalidatePath("/customers");
     }
 
-    // Reduce supplier balance if we paid them
+    // Update supplier balance
     if (data.supplierId) {
       await prisma.supplier.update({
         where: { id: data.supplierId },
         data: {
-          currentBalance: {
-            decrement: data.amount
-          }
+          currentBalance: data.direction === 'IN'
+            ? { increment: data.amount } // Supplier paid us back (refund)
+            : { decrement: data.amount } // We paid supplier
         }
       });
       revalidatePath("/suppliers");
