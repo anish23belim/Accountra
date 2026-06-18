@@ -34,25 +34,25 @@ export default async function CashbookPage() {
   let entries: LedgerEntry[] = [];
 
   for (const p of payments) {
-    if (p.customerId) {
-      entries.push({
-        id: p.id,
-        date: p.date,
-        description: `Receipt from Customer: ${p.customer?.name} ${p.reference ? `(${p.reference})` : ''}`,
-        type: "IN",
-        amount: p.amount,
-        balance: 0
-      });
-    } else if (p.supplierId) {
-      entries.push({
-        id: p.id,
-        date: p.date,
-        description: `Payment to Supplier: ${p.supplier?.name} ${p.reference ? `(${p.reference})` : ''}`,
-        type: "OUT",
-        amount: p.amount,
-        balance: 0
-      });
-    }
+      if (p.type === "IN") {
+        entries.push({
+          id: p.id,
+          date: p.date,
+          description: `Receipt from ${p.customerId ? `Customer: ${p.customer?.name}` : `Supplier: ${p.supplier?.name}`} ${p.reference ? `(${p.reference})` : ''}`,
+          type: "IN",
+          amount: p.amount,
+          balance: 0
+        });
+      } else {
+        entries.push({
+          id: p.id,
+          date: p.date,
+          description: `Payment to ${p.customerId ? `Customer: ${p.customer?.name}` : `Supplier: ${p.supplier?.name}`} ${p.reference ? `(${p.reference})` : ''}`,
+          type: "OUT",
+          amount: p.amount,
+          balance: 0
+        });
+      }
   }
 
   for (const e of expenses) {

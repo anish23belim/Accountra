@@ -25,7 +25,7 @@ export default async function PaymentsPage() {
     partyPhone: (p.customerId ? p.customer?.phone : p.supplier?.phone) || "",
     amount: p.amount,
     method: p.method,
-    type: (p.customerId ? "Received" : "Sent") as "Received" | "Sent",
+    type: (p.type === "IN" ? "Received" : "Sent") as "Received" | "Sent",
     appliedTo: p.invoice?.invoiceNumber || p.purchase?.billNumber || "Advance / On Account"
   }));
 

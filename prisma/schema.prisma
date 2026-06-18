@@ -310,6 +310,7 @@ model Payment {
   date            DateTime @default(now())
   amount          Float
   method          String   @default("CASH")
+  type            String   @default("IN") // IN = Received, OUT = Paid
   reference       String?
   
   // Can be linked to Customer or Supplier

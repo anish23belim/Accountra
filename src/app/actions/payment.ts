@@ -21,6 +21,7 @@ export async function createPayment(data: {
         paymentNumber,
         amount: data.amount,
         method: data.method,
+        type: data.direction || (data.customerId ? "IN" : "OUT"),
         reference: data.reference,
         customerId: data.customerId || null,
         supplierId: data.supplierId || null,
@@ -99,18 +100,26 @@ export async function deletePayment(id: string) {
   try {
     const payment = await prisma.payment.findUnique({ where: { id } });
     if (payment) {
-      if (payment.customerId) {
-        await prisma.customer.update({
-          where: { id: payment.customerId },
-          data: { currentBalance: { increment: payment.amount } }
-        });
-      }
-      if (payment.supplierId) {
-        await prisma.supplier.update({
-          where: { id: payment.supplierId },
-          data: { currentBalance: { increment: payment.amount } }
-        });
-      }
+        if (payment.customerId) {
+          await prisma.customer.update({
+            where: { id: payment.customerId },
+            data: { 
+              currentBalance: payment.type === 'OUT' 
+                ? { decrement: payment.amount }
+                : { increment: payment.amount } 
+            }
+          });
+        }
+        if (payment.supplierId) {
+          await prisma.supplier.update({
+            where: { id: payment.supplierId },
+            data: { 
+              currentBalance: payment.type === 'IN'
+                ? { decrement: payment.amount }
+                : { increment: payment.amount } 
+            }
+          });
+        }
     }
     
     
