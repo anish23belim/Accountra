@@ -1,8 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Overview } from "@/components/dashboard/overview";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
-import { DollarSign, Users, Package, CreditCard, AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { DollarSign, Users, Package, CreditCard, AlertCircle, ArrowUpRight, ArrowDownRight, TrendingUp, Wallet, Banknote, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { prisma } from "@/lib/auth";
 
@@ -48,16 +47,15 @@ export default async function Dashboard() {
   const totalProfit = totalSales - totalCOGS - totalExpenses;
 
   const activeCustomers = await prisma.customer.count();
-  const totalSuppliers = await prisma.supplier.count();
 
-  // Pending money owed to us (Only positive customer balances)
+  // Pending money owed to us
   const pendingReceivablesAggr = await prisma.customer.aggregate({ 
     _sum: { currentBalance: true },
     where: { currentBalance: { gt: 0 } }
   });
   const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
 
-  // Pending money we owe (Positive supplier balances + Negative customer balances)
+  // Pending money we owe
   const pendingPayablesSupplierAggr = await prisma.supplier.aggregate({ 
     _sum: { currentBalance: true },
     where: { currentBalance: { gt: 0 } }
@@ -152,184 +150,171 @@ export default async function Dashboard() {
   }));
 
   return (
-    <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">
-      <div className="flex items-center justify-between space-y-2">
-        <h2 className="text-3xl font-bold tracking-tight">Dashboard</h2>
+    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Overview</h2>
+          <p className="text-slate-500 mt-1">Here's what's happening with your business today.</p>
+        </div>
       </div>
       
-      {/* Alerts Section */}
+      {/* Premium Alerts */}
       <div className="grid gap-4 md:grid-cols-2">
-        {lowStockProducts.length > 0 ? (
+        {lowStockProducts.length > 0 && (
           <Link href="/products" className="block outline-none">
-            <Alert variant="destructive" className="hover:border-red-500 hover:shadow-sm transition-all cursor-pointer bg-red-50">
-              <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Low Stock Alert</AlertTitle>
-              <AlertDescription>
-                {lowStockProducts.length} products are running low on inventory. Please restock soon.
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center gap-4 bg-orange-50 border border-orange-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-orange-200 transition-all cursor-pointer">
+              <div className="h-10 w-10 bg-orange-100 rounded-full flex items-center justify-center text-orange-600 flex-shrink-0">
+                <AlertCircle className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-orange-900">Low Stock</h4>
+                <p className="text-sm text-orange-700">{lowStockProducts.length} items need restock.</p>
+              </div>
+            </div>
           </Link>
-        ) : (
-          <Alert className="bg-green-50 text-green-800 border-green-200">
-            <Package className="h-4 w-4" color="green" />
-            <AlertTitle>Inventory Healthy</AlertTitle>
-            <AlertDescription>
-              All products are adequately stocked.
-            </AlertDescription>
-          </Alert>
         )}
         
-        {pendingReceivables > 0 ? (
+        {pendingReceivables > 0 && (
           <Link href="/sales" className="block outline-none">
-            <Alert className="hover:border-blue-500 hover:shadow-sm transition-all cursor-pointer bg-white">
-              <CreditCard className="h-4 w-4 text-blue-600" />
-              <AlertTitle className="text-blue-800">Pending Receivables</AlertTitle>
-              <AlertDescription>
-                You have ₹{pendingReceivables.toFixed(2)} pending to be collected from customers.
-              </AlertDescription>
-            </Alert>
+            <div className="flex items-center gap-4 bg-blue-50 border border-blue-100 rounded-2xl p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all cursor-pointer">
+              <div className="h-10 w-10 bg-blue-100 rounded-full flex items-center justify-center text-blue-600 flex-shrink-0">
+                <ArrowDownRight className="h-5 w-5" />
+              </div>
+              <div>
+                <h4 className="font-semibold text-blue-900">Receivables</h4>
+                <p className="text-sm text-blue-700">₹{pendingReceivables.toFixed(2)} pending collection.</p>
+              </div>
+            </div>
           </Link>
-        ) : (
-          <Alert className="bg-slate-50 text-slate-800">
-            <CreditCard className="h-4 w-4 text-slate-600" />
-            <AlertTitle>No Pending Receivables</AlertTitle>
-            <AlertDescription>
-              All customer invoices are paid.
-            </AlertDescription>
-          </Alert>
         )}
       </div>
 
-      {/* Stats Cards Section */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
-        <Link href="/sales" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Sales</CardTitle>
-              <DollarSign className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalSales.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/purchases" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Purchases</CardTitle>
-              <Package className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalPurchases.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/expenses" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Expenses</CardTitle>
-              <CreditCard className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{totalExpenses.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/reports" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Profit</CardTitle>
-              <DollarSign className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className={`text-2xl font-bold ${totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                ₹{totalProfit.toFixed(2)}
-              </div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/customers" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Active Customers</CardTitle>
-              <Users className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{activeCustomers}</div>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* Primary Financial Stats (Hero Cards) */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
+            <Banknote className="w-16 h-16 text-emerald-600" />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-500">Bank / Cash</CardTitle>
+            <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
+              <Wallet className="h-4 w-4 text-emerald-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{bankBalance.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group">
+          <div className="absolute top-0 right-0 p-4 opacity-10 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform">
+            <TrendingUp className="w-16 h-16 text-indigo-600" />
+          </div>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-500">Net Profit</CardTitle>
+            <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
+              <DollarSign className="h-4 w-4 text-indigo-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className={`text-2xl sm:text-3xl font-extrabold ${totalProfit >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
+              ₹{totalProfit.toFixed(2)}
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-500">Receivables</CardTitle>
+            <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
+              <ArrowDownRight className="h-4 w-4 text-blue-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{pendingReceivables.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-semibold text-slate-500">Payables</CardTitle>
+            <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center">
+              <ArrowUpRight className="h-4 w-4 text-rose-600" />
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{pendingPayables.toFixed(2)}</div>
+          </CardContent>
+        </Card>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Link href="/suppliers" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Suppliers</CardTitle>
-              <Users className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{totalSuppliers}</div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/payments" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Est. Bank Balance</CardTitle>
-              <DollarSign className="h-4 w-4 text-slate-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">₹{bankBalance.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/sales" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pending Receivables</CardTitle>
-              <DollarSign className="h-4 w-4 text-slate-500 text-green-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">₹{pendingReceivables.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-        </Link>
-        <Link href="/purchases" className="block outline-none">
-          <Card className="hover:border-blue-500 hover:shadow-md transition-all cursor-pointer h-full bg-white">
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Outstanding Payables</CardTitle>
-              <CreditCard className="h-4 w-4 text-slate-500 text-red-500" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">₹{pendingPayables.toFixed(2)}</div>
-            </CardContent>
-          </Card>
-        </Link>
+      {/* Secondary Stats */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+        <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm transition-all bg-white/50 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Total Sales</CardTitle>
+            <Package className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold text-slate-700">₹{totalSales.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm transition-all bg-white/50 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Purchases</CardTitle>
+            <ShoppingCart className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold text-slate-700">₹{totalPurchases.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm transition-all bg-white/50 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Expenses</CardTitle>
+            <CreditCard className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold text-slate-700">₹{totalExpenses.toFixed(2)}</div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm transition-all bg-white/50 backdrop-blur-sm">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Customers</CardTitle>
+            <Users className="h-4 w-4 text-slate-400" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-lg font-bold text-slate-700">{activeCustomers}</div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Charts and Recent Transactions */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle>Overview</CardTitle>
-            <CardDescription>
-              Monthly Sales and Expenses Activity
-            </CardDescription>
+      <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-7">
+        <Card className="col-span-4 rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+            <CardTitle className="text-lg font-bold">Analytics</CardTitle>
+            <CardDescription>Sales vs Expenses this year</CardDescription>
           </CardHeader>
-          <CardContent className="pl-2">
+          <CardContent className="p-4 pl-0">
             <Overview data={chartData} />
           </CardContent>
         </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle>Recent Sales</CardTitle>
-            <CardDescription>
-              Your most recent customer invoices.
-            </CardDescription>
+        
+        <Card className="col-span-3 rounded-2xl border-0 shadow-sm bg-white overflow-hidden">
+          <CardHeader className="bg-slate-50/50 border-b border-slate-100 pb-4">
+            <CardTitle className="text-lg font-bold">Recent Sales</CardTitle>
+            <CardDescription>Latest customer invoices</CardDescription>
           </CardHeader>
-          <CardContent>
-            <RecentTransactions transactions={transactions} />
+          <CardContent className="p-0">
+            <div className="p-4">
+              <RecentTransactions transactions={transactions} />
+            </div>
+            <Link href="/sales" className="block text-center text-sm font-semibold text-blue-600 hover:bg-blue-50 py-3 border-t border-slate-100 transition-colors">
+              View All Sales
+            </Link>
           </CardContent>
         </Card>
       </div>
