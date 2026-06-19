@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { CustomerTable } from "./customer-table";
 import { prisma } from "@/lib/auth";
 

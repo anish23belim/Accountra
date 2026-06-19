@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { ExpenseTable } from "./expense-table";
 import { prisma } from "@/lib/auth";
 

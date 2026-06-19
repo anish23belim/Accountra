@@ -1,3 +1,4 @@
+export const dynamic = 'force-dynamic';
 import { SupplierTable } from "./supplier-table";
 import { prisma } from "@/lib/auth";
 
