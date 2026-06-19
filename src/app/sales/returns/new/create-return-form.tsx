@@ -273,7 +273,7 @@ export function CreateReturnForm({ customers, products, locations }: { customers
                     </td>
                     <td className="px-4 py-2">
                       <select 
-                        className="w-full bg-transparent border-0 focus:ring-0 text-sm p-1"
+                        className="flex h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={item.productId}
                         onChange={(e) => updateItem(item.id, "productId", e.target.value)}
                       >
