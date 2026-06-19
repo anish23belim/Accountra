@@ -104,33 +104,10 @@ export const authOptions: NextAuthOptions = {
       return token;
     },
     async session({ session, token }) {
-      // BYPASS LOGIN: ALWAYS RETURN ADMIN SESSION
-      if (!session.user) {
-        session.user = {
-          name: "Admin",
-          email: "admin@accountra.com"
-        };
-      }
-      
-      // Auto-assign admin properties
-      (session.user as any).role = "ADMIN";
-      
-      // Find the admin user ID synchronously (we'll ensure it exists in db)
-      if (!token.id && !token.sub) {
-        try {
-          const admin = await prisma.user.findFirst({ where: { role: "ADMIN" } });
-          if (admin) {
-            (session.user as any).id = admin.id;
-          } else {
-            // Fallback to a hardcoded ID or create one (usually the first user is admin)
-            const fallback = await prisma.user.findFirst();
-            if (fallback) (session.user as any).id = fallback.id;
-          }
-        } catch (e) {}
-      } else {
+      if (session.user) {
+        (session.user as any).role = token.role;
         (session.user as any).id = token.id || token.sub;
       }
-      
       return session;
     }
   },

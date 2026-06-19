@@ -2,11 +2,15 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  // BYPASS LOGIN SYSTEM AS REQUESTED BY USER
-  // We will allow all requests to proceed.
+  const token = request.cookies.get('next-auth.session-token')?.value || 
+                request.cookies.get('__Secure-next-auth.session-token')?.value;
   
+  if (!token) {
+    return NextResponse.redirect(new URL('/login', request.url));
+  }
+
   const pathname = request.nextUrl.pathname;
-  if (pathname !== '/companies' && pathname !== '/onboarding' && pathname !== '/api/cron/backup' && !pathname.startsWith('/api/')) {
+  if (pathname !== '/companies' && pathname !== '/onboarding' && pathname !== '/api/cron/backup') {
     const companyId = request.cookies.get('companyId')?.value;
     if (!companyId) {
       return NextResponse.redirect(new URL('/companies', request.url));
@@ -18,7 +22,7 @@ export function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Protect everything except login, api, static files
-    "/((?!login|api|_next/static|_next/image|favicon.ico).*)",
+    // Protect everything except /login and /api/auth
+    "/((?!login|api/auth|_next/static|_next/image|favicon.ico).*)",
   ]
 };

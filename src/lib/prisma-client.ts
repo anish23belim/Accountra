@@ -4,21 +4,7 @@ import { cookies } from "next/headers";
 
 export async function getPrisma() {
   const session = await getServerSession(authOptions);
-  let userId = (session?.user as any)?.id;
-
-  // BYPASS LOGIN: Fallback to first user in DB if session lacks ID
-  if (!userId) {
-    try {
-      const fallbackUser = await globalForPrisma.prisma.user.findFirst();
-      if (fallbackUser) {
-        userId = fallbackUser.id;
-      } else {
-        throw new Error("No users exist in the database");
-      }
-    } catch (e) {
-      console.warn("Prisma Fallback Warning:", e);
-    }
-  }
+  const userId = (session?.user as any)?.id;
 
   if (!userId) {
     throw new Error("Unauthorized");
