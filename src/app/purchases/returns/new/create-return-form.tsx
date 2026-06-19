@@ -273,7 +273,7 @@ export function CreateReturnForm({ suppliers, products, locations }: { suppliers
                     </td>
                     <td className="px-4 py-2">
                       <select 
-                        className="flex h-8 w-full rounded-md border border-slate-200 bg-white px-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex h-9 w-full min-w-[140px] rounded-md border border-slate-200 bg-white px-3 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         value={item.productId}
                         onChange={(e) => updateItem(item.id, "productId", e.target.value)}
                       >
@@ -293,26 +293,25 @@ export function CreateReturnForm({ suppliers, products, locations }: { suppliers
                       />
                     </td>
                     <td className="px-4 py-2">
-                      <Input type="number" min="1" className="h-8 w-full px-2" value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", Number(e.target.value))} />
-                      {/* No stock warning for returns */}
+                      <Input type="number" min="1" className="h-9 w-full min-w-[80px] px-2 text-sm" value={item.quantity} onChange={(e) => updateItem(item.id, "quantity", Number(e.target.value))} />
                     </td>
                     <td className="px-4 py-2">
-                      <Input className="h-8 w-full px-2 bg-slate-50 cursor-not-allowed" readOnly value={item.unit} />
+                      <Input className="h-9 w-full min-w-[80px] px-2 text-sm bg-slate-50 cursor-not-allowed" readOnly value={item.unit} />
                     </td>
                     <td className="px-4 py-2">
-                      <Input type="number" min="0" className="h-8 w-full px-2" value={item.price} onChange={(e) => updateItem(item.id, "price", Number(e.target.value))} />
+                      <Input type="number" min="0" className="h-9 w-full min-w-[80px] px-2 text-sm" value={item.price} onChange={(e) => updateItem(item.id, "price", Number(e.target.value))} />
                     </td>
                     <td className="px-4 py-2">
-                      <Input type="number" min="0" className="h-8 w-full px-2 text-red-600" value={item.discountAmount} onChange={(e) => updateItem(item.id, "discountAmount", Number(e.target.value))} />
+                      <Input type="number" min="0" className="h-9 w-full min-w-[80px] px-2 text-sm text-red-600" value={item.discountAmount} onChange={(e) => updateItem(item.id, "discountAmount", Number(e.target.value))} />
                     </td>
                     <td className="px-4 py-2">
-                      <Input type="number" min="0" className="h-8 w-full px-2 text-blue-600" value={item.taxRate} onChange={(e) => updateItem(item.id, "taxRate", Number(e.target.value))} />
+                      <Input type="number" min="0" className="h-9 w-full min-w-[80px] px-2 text-sm text-blue-600" value={item.taxRate} onChange={(e) => updateItem(item.id, "taxRate", Number(e.target.value))} />
                     </td>
                     <td className="px-4 py-2 text-right font-medium">
                       {item.total.toFixed(2)}
                     </td>
                     <td className="px-2 py-2 text-center">
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-600 hover:bg-red-50" onClick={() => handleRemoveItem(item.id)}>
+                      <Button variant="ghost" size="sm" className="h-9 w-9 p-0 text-red-600 hover:bg-red-50" onClick={() => handleRemoveItem(item.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </td>
