@@ -26,12 +26,15 @@ export default function CompaniesPage() {
   }, []);
 
   const handleSelect = async (id: string) => {
-    setIsSelecting(id);
-    const success = await selectCompany(id); // Removed redirect path
-    if (success) {
+    try {
+      setIsSelecting(id);
+      // Fallback: Set cookie directly on the client to avoid Next.js Server Action flakiness
+      document.cookie = `companyId=${id}; path=/; max-age=2592000`; // 30 days
+      
       // Force a hard reload to ensure middleware and cookies are synchronized
       window.location.href = "/";
-    } else {
+    } catch (err) {
+      console.error(err);
       setIsSelecting(null);
     }
   };
@@ -40,17 +43,20 @@ export default function CompaniesPage() {
     e.preventDefault();
     if (!newCompanyName.trim()) return;
     setIsCreating(true);
-    const newId = await createCompany(newCompanyName);
-    if (newId) {
-      const success = await selectCompany(newId);
-      if (success) {
+    try {
+      const newId = await createCompany(newCompanyName);
+      if (newId) {
+        document.cookie = `companyId=${newId}; path=/; max-age=2592000`; // 30 days
         if (companies.length === 0) {
           window.location.href = "/onboarding";
         } else {
           window.location.href = "/";
         }
+      } else {
+        setIsCreating(false);
       }
-    } else {
+    } catch (err) {
+      console.error(err);
       setIsCreating(false);
     }
   };
