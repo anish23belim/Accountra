@@ -25,7 +25,7 @@ export default function CompaniesPage() {
 
   const handleSelect = async (id: string) => {
     await selectCompany(id);
-    router.push("/");
+    window.location.href = "/";
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -36,9 +36,9 @@ export default function CompaniesPage() {
     if (newId) {
       await selectCompany(newId);
       if (companies.length === 0) {
-        router.push("/onboarding");
+        window.location.href = "/onboarding";
       } else {
-        router.push("/");
+        window.location.href = "/";
       }
     } else {
       setLoading(false);
