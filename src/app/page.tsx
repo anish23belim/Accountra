@@ -8,10 +8,43 @@ import { getPrisma } from "@/lib/prisma-client";
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
-  // 1. Fetch real aggregated data
-  const invoicesWithItems = await (await getPrisma()).invoice.findMany({
-    include: { items: { include: { product: true } } }
-  });
+  const prisma = await getPrisma();
+  const currentYear = new Date().getFullYear();
+  const yearStart = new Date(`${currentYear}-01-01`);
+  const yearEnd = new Date(`${currentYear}-12-31`);
+
+  // 1. Fetch all required data concurrently to prevent Serverless Timeout
+  const [
+    invoicesWithItems,
+    returnsWithItems,
+    totalPurchasesAggr,
+    purchaseReturnsAggr,
+    totalExpensesAggr,
+    activeCustomers,
+    pendingReceivablesAggr,
+    pendingPayablesSupplierAggr,
+    pendingPayablesCustomerAggr,
+    products,
+    allPayments,
+    allPurchases,
+    allExpenses,
+    recentInvoices
+  ] = await Promise.all([
+    prisma.invoice.findMany({ include: { items: { include: { product: true } } } }),
+    prisma.salesReturn.findMany({ include: { items: { include: { product: true } } } }),
+    prisma.purchase.aggregate({ _sum: { totalAmount: true } }),
+    prisma.purchaseReturn.aggregate({ _sum: { totalAmount: true } }),
+    prisma.expense.aggregate({ _sum: { amount: true } }),
+    prisma.customer.count(),
+    prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
+    prisma.supplier.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
+    prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { lt: 0 } } }),
+    prisma.product.findMany(),
+    prisma.payment.findMany({ select: { amount: true, type: true } }),
+    prisma.purchase.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, totalAmount: true } }),
+    prisma.expense.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, amount: true } }),
+    prisma.invoice.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { customer: true } })
+  ]);
 
   let totalSales = 0;
   let totalCOGS = 0;
@@ -24,10 +57,6 @@ export default async function Dashboard() {
     });
   });
 
-  const returnsWithItems = await (await getPrisma()).salesReturn.findMany({
-    include: { items: { include: { product: true } } }
-  });
-
   returnsWithItems.forEach(ret => {
     totalSales -= ret.totalAmount;
     ret.items.forEach(item => {
@@ -36,44 +65,22 @@ export default async function Dashboard() {
     });
   });
 
-  const totalPurchasesAggr = await (await getPrisma()).purchase.aggregate({ _sum: { totalAmount: true } });
-  const purchaseReturnsAggr = await (await getPrisma()).purchaseReturn.aggregate({ _sum: { totalAmount: true } });
   const totalPurchases = (totalPurchasesAggr._sum.totalAmount || 0) - (purchaseReturnsAggr._sum.totalAmount || 0);
-
-  const totalExpensesAggr = await (await getPrisma()).expense.aggregate({ _sum: { amount: true } });
   const totalExpenses = totalExpensesAggr._sum.amount || 0;
 
   // Real Profit (Gross Margin - Expenses)
   const totalProfit = totalSales - totalCOGS - totalExpenses;
 
-  const activeCustomers = await (await getPrisma()).customer.count();
-
   // Pending money owed to us
-  const pendingReceivablesAggr = await (await getPrisma()).customer.aggregate({ 
-    _sum: { currentBalance: true },
-    where: { currentBalance: { gt: 0 } }
-  });
   const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
 
   // Pending money we owe
-  const pendingPayablesSupplierAggr = await (await getPrisma()).supplier.aggregate({ 
-    _sum: { currentBalance: true },
-    where: { currentBalance: { gt: 0 } }
-  });
-  
-  const pendingPayablesCustomerAggr = await (await getPrisma()).customer.aggregate({
-    _sum: { currentBalance: true },
-    where: { currentBalance: { lt: 0 } }
-  });
-  
   const pendingPayables = (pendingPayablesSupplierAggr._sum.currentBalance || 0) + Math.abs(pendingPayablesCustomerAggr._sum.currentBalance || 0);
 
   // Low stock products
-  const products = await (await getPrisma()).product.findMany();
   const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
 
   // Calculate actual Bank/Cash Balance based on Payments
-  const allPayments = await (await getPrisma()).payment.findMany({ select: { amount: true, type: true } });
   let totalReceived = 0;
   let totalSent = 0;
   allPayments.forEach(p => {
@@ -84,18 +91,6 @@ export default async function Dashboard() {
   const bankBalance = totalReceived - totalSent - totalExpenses;
 
   // 2. Fetch data for the Chart (Current Year Monthly Data)
-  const currentYear = new Date().getFullYear();
-  
-  const allPurchases = await (await getPrisma()).purchase.findMany({
-    where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
-    select: { date: true, totalAmount: true }
-  });
-  
-  const allExpenses = await (await getPrisma()).expense.findMany({
-    where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
-    select: { date: true, amount: true }
-  });
-
   const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
   const chartData = monthNames.map((name, index) => {
     const monthInvoices = invoicesWithItems.filter(i => i.date.getFullYear() === currentYear && i.date.getMonth() === index);
@@ -131,13 +126,6 @@ export default async function Dashboard() {
       purchases: monthPurchases,
       profit: monthSales - monthCOGS - monthExpenses
     };
-  });
-
-  // Recent transactions (Top 5 sales)
-  const recentInvoices = await (await getPrisma()).invoice.findMany({
-    take: 5,
-    orderBy: { createdAt: 'desc' },
-    include: { customer: true }
   });
 
   const transactions = recentInvoices.map(inv => ({
