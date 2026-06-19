@@ -8,137 +8,132 @@ import { getPrisma } from "@/lib/prisma-client";
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
-  const prisma = await getPrisma();
-  const currentYear = new Date().getFullYear();
-  const yearStart = new Date(`${currentYear}-01-01`);
-  const yearEnd = new Date(`${currentYear}-12-31`);
+  try {
+    const prisma = await getPrisma();
+    const currentYear = new Date().getFullYear();
+    const yearStart = new Date(`${currentYear}-01-01`);
+    const yearEnd = new Date(`${currentYear}-12-31`);
 
-  // 1. Fetch all required data concurrently to prevent Serverless Timeout
-  const [
-    invoicesWithItems,
-    returnsWithItems,
-    totalPurchasesAggr,
-    purchaseReturnsAggr,
-    totalExpensesAggr,
-    activeCustomers,
-    pendingReceivablesAggr,
-    pendingPayablesSupplierAggr,
-    pendingPayablesCustomerAggr,
-    products,
-    allPayments,
-    allPurchases,
-    allExpenses,
-    recentInvoices
-  ] = await Promise.all([
-    prisma.invoice.findMany({ include: { items: { include: { product: true } } } }),
-    prisma.salesReturn.findMany({ include: { items: { include: { product: true } } } }),
-    prisma.purchase.aggregate({ _sum: { totalAmount: true } }),
-    prisma.purchaseReturn.aggregate({ _sum: { totalAmount: true } }),
-    prisma.expense.aggregate({ _sum: { amount: true } }),
-    prisma.customer.count(),
-    prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
-    prisma.supplier.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
-    prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { lt: 0 } } }),
-    prisma.product.findMany(),
-    prisma.payment.findMany({ select: { amount: true, type: true } }),
-    prisma.purchase.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, totalAmount: true } }),
-    prisma.expense.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, amount: true } }),
-    prisma.invoice.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { customer: true } })
-  ]);
+    // Fetch data in smaller batches to prevent Prisma connection pool exhaustion
+    const [invoicesWithItems, returnsWithItems, products, allPayments] = await Promise.all([
+      prisma.invoice.findMany({ include: { items: { include: { product: true } } } }),
+      prisma.salesReturn.findMany({ include: { items: { include: { product: true } } } }),
+      prisma.product.findMany(),
+      prisma.payment.findMany({ select: { amount: true, type: true } })
+    ]);
 
-  let totalSales = 0;
-  let totalCOGS = 0;
+    const [
+      totalPurchasesAggr,
+      purchaseReturnsAggr,
+      totalExpensesAggr,
+      activeCustomers
+    ] = await Promise.all([
+      prisma.purchase.aggregate({ _sum: { totalAmount: true } }),
+      prisma.purchaseReturn.aggregate({ _sum: { totalAmount: true } }),
+      prisma.expense.aggregate({ _sum: { amount: true } }),
+      prisma.customer.count()
+    ]);
 
-  invoicesWithItems.forEach(inv => {
-    totalSales += inv.totalAmount;
-    inv.items.forEach(item => {
-      const costPrice = item.product?.purchasePrice || 0;
-      totalCOGS += costPrice * item.quantity;
-    });
-  });
+    const [
+      pendingReceivablesAggr,
+      pendingPayablesSupplierAggr,
+      pendingPayablesCustomerAggr
+    ] = await Promise.all([
+      prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
+      prisma.supplier.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
+      prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { lt: 0 } } })
+    ]);
 
-  returnsWithItems.forEach(ret => {
-    totalSales -= ret.totalAmount;
-    ret.items.forEach(item => {
-      const costPrice = item.product?.purchasePrice || 0;
-      totalCOGS -= costPrice * item.quantity;
-    });
-  });
+    const [allPurchases, allExpenses, recentInvoices] = await Promise.all([
+      prisma.purchase.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, totalAmount: true } }),
+      prisma.expense.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, amount: true } }),
+      prisma.invoice.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { customer: true } })
+    ]);
 
-  const totalPurchases = (totalPurchasesAggr._sum.totalAmount || 0) - (purchaseReturnsAggr._sum.totalAmount || 0);
-  const totalExpenses = totalExpensesAggr._sum.amount || 0;
+    let totalSales = 0;
+    let totalCOGS = 0;
 
-  // Real Profit (Gross Margin - Expenses)
-  const totalProfit = totalSales - totalCOGS - totalExpenses;
-
-  // Pending money owed to us
-  const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
-
-  // Pending money we owe
-  const pendingPayables = (pendingPayablesSupplierAggr._sum.currentBalance || 0) + Math.abs(pendingPayablesCustomerAggr._sum.currentBalance || 0);
-
-  // Low stock products
-  const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
-
-  // Calculate actual Bank/Cash Balance based on Payments
-  let totalReceived = 0;
-  let totalSent = 0;
-  allPayments.forEach(p => {
-    if (p.type === "IN") totalReceived += p.amount;
-    if (p.type === "OUT") totalSent += p.amount;
-  });
-  
-  const bankBalance = totalReceived - totalSent - totalExpenses;
-
-  // 2. Fetch data for the Chart (Current Year Monthly Data)
-  const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  const chartData = monthNames.map((name, index) => {
-    const monthInvoices = invoicesWithItems.filter(i => i.date.getFullYear() === currentYear && i.date.getMonth() === index);
-    const monthSalesReturns = returnsWithItems.filter(r => r.date.getFullYear() === currentYear && r.date.getMonth() === index);
-    const monthSalesReturnsAmount = monthSalesReturns.reduce((acc, curr) => acc + curr.totalAmount, 0);
-    const monthSalesReturnsCOGS = monthSalesReturns.reduce((acc, curr) => {
-      let cogs = 0;
-      curr.items.forEach(item => {
+    invoicesWithItems.forEach(inv => {
+      totalSales += inv.totalAmount;
+      inv.items.forEach(item => {
         const costPrice = item.product?.purchasePrice || 0;
-        cogs += costPrice * item.quantity;
+        totalCOGS += costPrice * item.quantity;
       });
-      return acc + cogs;
-    }, 0);
+    });
 
-    const monthSales = monthInvoices.reduce((acc, curr) => acc + curr.totalAmount, 0) - monthSalesReturnsAmount;
-    
-    const monthCOGS = monthInvoices.reduce((acc, curr) => {
-      let cogs = 0;
-      curr.items.forEach(item => {
+    returnsWithItems.forEach(ret => {
+      totalSales -= ret.totalAmount;
+      ret.items.forEach(item => {
         const costPrice = item.product?.purchasePrice || 0;
-        cogs += costPrice * item.quantity;
+        totalCOGS -= costPrice * item.quantity;
       });
-      return acc + cogs;
-    }, 0) - monthSalesReturnsCOGS;
+    });
 
-    const monthPurchases = allPurchases.filter(p => p.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
-    const monthExpenses = allExpenses.filter(e => e.date.getMonth() === index).reduce((acc, curr) => acc + curr.amount, 0);
+    const totalPurchases = (totalPurchasesAggr._sum.totalAmount || 0) - (purchaseReturnsAggr._sum.totalAmount || 0);
+    const totalExpenses = totalExpensesAggr._sum.amount || 0;
+
+    const totalProfit = totalSales - totalCOGS - totalExpenses;
+    const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
+    const pendingPayables = (pendingPayablesSupplierAggr._sum.currentBalance || 0) + Math.abs(pendingPayablesCustomerAggr._sum.currentBalance || 0);
+    const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
+
+    let totalReceived = 0;
+    let totalSent = 0;
+    allPayments.forEach(p => {
+      if (p.type === "IN") totalReceived += p.amount;
+      if (p.type === "OUT") totalSent += p.amount;
+    });
     
-    return {
-      name,
-      sales: monthSales,
-      expenses: monthExpenses,
-      purchases: monthPurchases,
-      profit: monthSales - monthCOGS - monthExpenses
-    };
-  });
+    const bankBalance = totalReceived - totalSent - totalExpenses;
 
-  const transactions = recentInvoices.map(inv => ({
-    id: inv.id,
-    name: inv.customer.name,
-    email: inv.customer.email || "No email",
-    amount: `+₹${inv.totalAmount.toFixed(2)}`,
-    status: inv.status || "Completed",
-    type: "Sale"
-  }));
+    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const chartData = monthNames.map((name, index) => {
+      const monthInvoices = invoicesWithItems.filter(i => i.date.getFullYear() === currentYear && i.date.getMonth() === index);
+      const monthSalesReturns = returnsWithItems.filter(r => r.date.getFullYear() === currentYear && r.date.getMonth() === index);
+      const monthSalesReturnsAmount = monthSalesReturns.reduce((acc, curr) => acc + curr.totalAmount, 0);
+      const monthSalesReturnsCOGS = monthSalesReturns.reduce((acc, curr) => {
+        let cogs = 0;
+        curr.items.forEach(item => {
+          const costPrice = item.product?.purchasePrice || 0;
+          cogs += costPrice * item.quantity;
+        });
+        return acc + cogs;
+      }, 0);
 
-  return (
-    <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full">
+      const monthSales = monthInvoices.reduce((acc, curr) => acc + curr.totalAmount, 0) - monthSalesReturnsAmount;
+      const monthCOGS = monthInvoices.reduce((acc, curr) => {
+        let cogs = 0;
+        curr.items.forEach(item => {
+          const costPrice = item.product?.purchasePrice || 0;
+          cogs += costPrice * item.quantity;
+        });
+        return acc + cogs;
+      }, 0) - monthSalesReturnsCOGS;
+
+      const monthPurchases = allPurchases.filter(p => p.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
+      const monthExpenses = allExpenses.filter(e => e.date.getMonth() === index).reduce((acc, curr) => acc + curr.amount, 0);
+      
+      return {
+        name,
+        sales: monthSales,
+        expenses: monthExpenses,
+        purchases: monthPurchases,
+        profit: monthSales - monthCOGS - monthExpenses
+      };
+    });
+
+    const transactions = recentInvoices.map(inv => ({
+      id: inv.id,
+      name: inv.customer.name,
+      email: inv.customer.email || "No email",
+      amount: `+₹${inv.totalAmount.toFixed(2)}`,
+      status: inv.status || "Completed",
+      type: "Sale"
+    }));
+
+    return (
+      <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full">
+        {/* ... The rest of the dashboard UI ... */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-extrabold tracking-tight text-slate-900">Overview</h2>
@@ -318,4 +313,24 @@ export default async function Dashboard() {
       </div>
     </div>
   );
+  } catch (error: any) {
+    console.error("Dashboard Error:", error);
+    return (
+      <div className="flex-1 p-8 pt-6 max-w-7xl mx-auto w-full flex items-center justify-center">
+        <div className="bg-red-50 border border-red-200 rounded-2xl p-8 max-w-2xl w-full text-center shadow-sm">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h2 className="text-2xl font-bold text-slate-900 mb-2">Error Loading Dashboard</h2>
+          <p className="text-slate-600 mb-6">There was a problem loading your company data. This usually happens if the database connection times out or the company setup is incomplete.</p>
+          <div className="bg-white p-4 rounded-xl border border-red-100 text-left overflow-auto max-h-48 text-sm text-red-600 font-mono mb-6 shadow-inner">
+            {error?.message || "Unknown error occurred"}
+          </div>
+          <Link href="/companies">
+            <Button className="h-12 px-8 bg-slate-900 hover:bg-slate-800 text-white rounded-xl shadow-lg">
+              Go back to Companies
+            </Button>
+          </Link>
+        </div>
+      </div>
+    );
+  }
 }
