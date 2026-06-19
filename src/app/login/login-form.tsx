@@ -33,11 +33,7 @@ export function LoginForm() {
         setError("Failed to start quick session");
         setIsGuestLoading(false);
       } else {
-        if (typeof window !== 'undefined' && localStorage.getItem('hasSeenTour')) {
-          router.push("/");
-        } else {
-          router.push("/onboarding");
-        }
+        router.push("/companies");
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -51,9 +47,10 @@ export function LoginForm() {
     setError("");
 
     try {
+      const cleanEmail = email.trim().toLowerCase();
       const res = await signIn("credentials", {
         redirect: false,
-        email,
+        email: cleanEmail,
         password,
       });
 
