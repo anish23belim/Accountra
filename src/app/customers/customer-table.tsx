@@ -297,16 +297,6 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
               </div>
             </div>
 
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
-              </div>
-              <div className="grid gap-2">
-                <Label htmlFor="phone">Phone / Mobile</Label>
-                <Input id="phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
-              </div>
-            </div>
-
             <div className="grid grid-cols-1 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="address">Address</Label>
@@ -391,3 +381,4 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
     </>
   );
 }
+
