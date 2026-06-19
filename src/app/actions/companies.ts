@@ -17,13 +17,19 @@ export async function getCompanies() {
   });
 }
 
-export async function selectCompany(companyId: string) {
+import { redirect } from "next/navigation";
+
+export async function selectCompany(companyId: string, redirectPath?: string) {
   const cookieStore = cookies();
   // Set cookie to expire in 30 days
   cookieStore.set("companyId", companyId, {
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
   });
+  
+  if (redirectPath) {
+    redirect(redirectPath);
+  }
   return true;
 }
 
