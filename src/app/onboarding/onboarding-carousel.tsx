@@ -17,6 +17,9 @@ export function OnboardingCarousel({ initialSettings }: { initialSettings: any }
   const [companyPhone, setCompanyPhone] = useState(initialSettings?.mobile || "");
 
   const handleFinish = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('hasSeenTour', 'true');
+    }
     router.push("/");
   };
 

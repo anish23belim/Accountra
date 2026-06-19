@@ -33,7 +33,11 @@ export function LoginForm() {
         setError("Failed to start quick session");
         setIsGuestLoading(false);
       } else {
-        router.push("/onboarding");
+        if (typeof window !== 'undefined' && localStorage.getItem('hasSeenTour')) {
+          router.push("/");
+        } else {
+          router.push("/onboarding");
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -57,7 +61,11 @@ export function LoginForm() {
         setError("Invalid email or password");
         setIsLoading(false);
       } else {
-        router.push("/onboarding");
+        if (typeof window !== 'undefined' && localStorage.getItem('hasSeenTour')) {
+          router.push("/");
+        } else {
+          router.push("/onboarding");
+        }
       }
     } catch (err) {
       setError("An unexpected error occurred");
