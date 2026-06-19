@@ -192,34 +192,28 @@ export default async function Dashboard() {
       {/* Primary Financial Stats (Hero Cards) */}
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href="/payments" className="block outline-none">
-          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group h-full cursor-pointer">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-300">
-              <Banknote className="w-20 h-20 text-emerald-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold text-slate-500">Bank / Cash</CardTitle>
-              <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center">
-                <Wallet className="h-4 w-4 text-emerald-600" />
+          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white overflow-hidden group h-full cursor-pointer">
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <div className="w-10 h-10 rounded-full bg-emerald-50 flex items-center justify-center">
+                <Wallet className="h-5 w-5 text-emerald-600" />
               </div>
+              <CardTitle className="text-sm font-semibold text-slate-500 text-center">Bank / Cash</CardTitle>
             </CardHeader>
-            <CardContent className="relative z-10">
+            <CardContent className="flex justify-center text-center">
               <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{bankBalance.toFixed(2)}</div>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/reports" className="block outline-none">
-          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group h-full cursor-pointer">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-300">
-              <TrendingUp className="w-20 h-20 text-indigo-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold text-slate-500">Net Profit</CardTitle>
-              <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center">
-                <DollarSign className="h-4 w-4 text-indigo-600" />
+          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white overflow-hidden group h-full cursor-pointer">
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <div className="w-10 h-10 rounded-full bg-indigo-50 flex items-center justify-center">
+                <DollarSign className="h-5 w-5 text-indigo-600" />
               </div>
+              <CardTitle className="text-sm font-semibold text-slate-500 text-center">Net Profit</CardTitle>
             </CardHeader>
-            <CardContent className="relative z-10">
+            <CardContent className="flex justify-center text-center">
               <div className={`text-2xl sm:text-3xl font-extrabold ${totalProfit >= 0 ? 'text-indigo-600' : 'text-red-600'}`}>
                 ₹{totalProfit.toFixed(2)}
               </div>
@@ -228,34 +222,28 @@ export default async function Dashboard() {
         </Link>
 
         <Link href="/sales" className="block outline-none">
-          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group h-full cursor-pointer">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-300">
-              <ArrowDownRight className="w-20 h-20 text-blue-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold text-slate-500">Receivables</CardTitle>
-              <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center">
-                <ArrowDownRight className="h-4 w-4 text-blue-600" />
+          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white overflow-hidden group h-full cursor-pointer">
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <div className="w-10 h-10 rounded-full bg-blue-50 flex items-center justify-center">
+                <ArrowDownRight className="h-5 w-5 text-blue-600" />
               </div>
+              <CardTitle className="text-sm font-semibold text-slate-500 text-center">Receivables</CardTitle>
             </CardHeader>
-            <CardContent className="relative z-10">
+            <CardContent className="flex justify-center text-center">
               <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{pendingReceivables.toFixed(2)}</div>
             </CardContent>
           </Card>
         </Link>
 
         <Link href="/purchases" className="block outline-none">
-          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white relative overflow-hidden group h-full cursor-pointer">
-            <div className="absolute top-0 right-0 p-4 opacity-5 transform translate-x-2 -translate-y-2 group-hover:scale-110 transition-transform duration-300">
-              <ArrowUpRight className="w-20 h-20 text-rose-600" />
-            </div>
-            <CardHeader className="flex flex-row items-center justify-between pb-2 relative z-10">
-              <CardTitle className="text-sm font-semibold text-slate-500">Payables</CardTitle>
-              <div className="w-8 h-8 rounded-full bg-rose-50 flex items-center justify-center">
-                <ArrowUpRight className="h-4 w-4 text-rose-600" />
+          <Card className="rounded-2xl border-0 shadow-sm hover:shadow-md transition-all bg-white overflow-hidden group h-full cursor-pointer">
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <div className="w-10 h-10 rounded-full bg-rose-50 flex items-center justify-center">
+                <ArrowUpRight className="h-5 w-5 text-rose-600" />
               </div>
+              <CardTitle className="text-sm font-semibold text-slate-500 text-center">Payables</CardTitle>
             </CardHeader>
-            <CardContent className="relative z-10">
+            <CardContent className="flex justify-center text-center">
               <div className="text-2xl sm:text-3xl font-extrabold text-slate-900">₹{pendingPayables.toFixed(2)}</div>
             </CardContent>
           </Card>
@@ -266,11 +254,11 @@ export default async function Dashboard() {
       <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
         <Link href="/sales" className="block outline-none">
           <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm hover:border-blue-200 transition-all bg-white/50 backdrop-blur-sm cursor-pointer h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Total Sales</CardTitle>
-              <Package className="h-4 w-4 text-slate-400" />
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <Package className="h-6 w-6 text-slate-400" />
+              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400 text-center">Total Sales</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center text-center">
               <div className="text-lg font-bold text-slate-700">₹{totalSales.toFixed(2)}</div>
             </CardContent>
           </Card>
@@ -278,11 +266,11 @@ export default async function Dashboard() {
 
         <Link href="/purchases" className="block outline-none">
           <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm hover:border-blue-200 transition-all bg-white/50 backdrop-blur-sm cursor-pointer h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Purchases</CardTitle>
-              <ShoppingCart className="h-4 w-4 text-slate-400" />
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <ShoppingCart className="h-6 w-6 text-slate-400" />
+              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400 text-center">Purchases</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center text-center">
               <div className="text-lg font-bold text-slate-700">₹{totalPurchases.toFixed(2)}</div>
             </CardContent>
           </Card>
@@ -290,11 +278,11 @@ export default async function Dashboard() {
 
         <Link href="/expenses" className="block outline-none">
           <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm hover:border-blue-200 transition-all bg-white/50 backdrop-blur-sm cursor-pointer h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Expenses</CardTitle>
-              <CreditCard className="h-4 w-4 text-slate-400" />
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <CreditCard className="h-6 w-6 text-slate-400" />
+              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400 text-center">Expenses</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center text-center">
               <div className="text-lg font-bold text-slate-700">₹{totalExpenses.toFixed(2)}</div>
             </CardContent>
           </Card>
@@ -302,11 +290,11 @@ export default async function Dashboard() {
 
         <Link href="/customers" className="block outline-none">
           <Card className="rounded-2xl border border-slate-100 shadow-none hover:shadow-sm hover:border-blue-200 transition-all bg-white/50 backdrop-blur-sm cursor-pointer h-full">
-            <CardHeader className="flex flex-row items-center justify-between pb-2">
-              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400">Customers</CardTitle>
-              <Users className="h-4 w-4 text-slate-400" />
+            <CardHeader className="flex flex-col items-center justify-center space-y-2 pb-2">
+              <Users className="h-6 w-6 text-slate-400" />
+              <CardTitle className="text-xs uppercase tracking-wider font-bold text-slate-400 text-center">Customers</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="flex justify-center text-center">
               <div className="text-lg font-bold text-slate-700">{activeCustomers}</div>
             </CardContent>
           </Card>
