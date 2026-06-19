@@ -14,21 +14,22 @@ datasource db {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String?   @unique
-  emailVerified DateTime?
-  password      String?
-  image         String?
-  role          String    @default("STAFF")
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id             String           @id @default(cuid())
+  name           String?
+  email          String?          @unique
+  emailVerified  DateTime?
+  password       String?
+  image          String?
+  role           String           @default("STAFF")
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+  CompanySetting CompanySetting[]
 }
 
 // enum Role removed for SQLite compatibility
 
 model CompanySetting {
-  id                 String    @id @default("1")
+  id                 String    @id @default(cuid())
   name               String    @default("Accountra Inc")
   address            String?
   state              String?
@@ -55,7 +56,19 @@ model CompanySetting {
   backupEmail    String?
   backupPassword String?
 
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  updatedAt       DateTime         @updatedAt
+  customers       Customer[]
+  suppliers       Supplier[]
+  products        Product[]
+  locations       Location[]
+  invoices        Invoice[]
+  purchases       Purchase[]
+  expenses        Expense[]
+  payments        Payment[]
+  salesReturns    SalesReturn[]
+  purchaseReturns PurchaseReturn[]
+  userId          String?
+  user            User?            @relation(fields: [userId], references: [id])
 }
 
 model Customer {
@@ -80,9 +93,11 @@ model Customer {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  invoices     Invoice[]
-  payments     Payment[]
-  salesReturns SalesReturn[]
+  invoices         Invoice[]
+  payments         Payment[]
+  salesReturns     SalesReturn[]
+  CompanySetting   CompanySetting? @relation(fields: [companySettingId], references: [id])
+  companySettingId String?
 }
 
 model Supplier {
@@ -106,9 +121,11 @@ model Supplier {
   createdAt           DateTime @default(now())
   updatedAt           DateTime @updatedAt
 
-  purchases       Purchase[]
-  payments        Payment[]
-  purchaseReturns PurchaseReturn[]
+  purchases        Purchase[]
+  payments         Payment[]
+  purchaseReturns  PurchaseReturn[]
+  CompanySetting   CompanySetting?  @relation(fields: [companySettingId], references: [id])
+  companySettingId String?
 }
 
 model Product {
@@ -135,6 +152,8 @@ model Product {
   locationStocks      LocationStock[]
   salesReturnItems    SalesReturnItem[]
   purchaseReturnItems PurchaseReturnItem[]
+  CompanySetting      CompanySetting?      @relation(fields: [companySettingId], references: [id])
+  companySettingId    String?
 }
 
 model Location {
@@ -149,8 +168,10 @@ model Location {
   salesReturns    SalesReturn[]
   purchaseReturns PurchaseReturn[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 model LocationStock {
@@ -221,8 +242,10 @@ model Invoice {
   payments     Payment[]
   salesReturns SalesReturn[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 model InvoiceItem {
@@ -270,8 +293,10 @@ model Purchase {
   payments        Payment[]
   purchaseReturns PurchaseReturn[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 model PurchaseItem {
@@ -300,8 +325,10 @@ model Expense {
   paymentMethod String   @default("CASH")
   receiptUrl    String?
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 model Payment {
@@ -327,8 +354,10 @@ model Payment {
   purchaseId String?
   purchase   Purchase? @relation(fields: [purchaseId], references: [id])
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 // Enums removed for SQLite compatibility
@@ -355,8 +384,10 @@ model SalesReturn {
 
   items SalesReturnItem[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 model SalesReturnItem {
@@ -398,8 +429,10 @@ model PurchaseReturn {
 
   items PurchaseReturnItem[]
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt\n  userId String?\n  user User? @relation(fields: [userId], references: [id])
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+  companyId String?
+  company   CompanySetting? @relation(fields: [companyId], references: [id])
 }
 
 model PurchaseReturnItem {

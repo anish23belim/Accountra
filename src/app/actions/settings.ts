@@ -3,19 +3,17 @@
 import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
+import { cookies } from "next/headers";
+
 export async function getCompanySettings() {
   const prisma = await getPrisma();
+  const companyId = cookies().get("companyId")?.value;
+  if (!companyId) return null;
 
   try {
-    let settings = await prisma.companySetting.findFirst();
-    if (!settings) {
-      settings = await prisma.companySetting.create({
-        data: {
-          name: "Accountra Inc",
-        }
-      });
-    }
-    return settings;
+    return await prisma.companySetting.findFirst({
+      where: { id: companyId }
+    });
   } catch (error) {
     console.error("Error fetching settings:", error);
     return null;
@@ -48,7 +46,10 @@ export async function updateCompanySettings(data: {
   const prisma = await getPrisma();
 
   try {
-    const existing = await prisma.companySetting.findFirst();
+    const companyId = cookies().get("companyId")?.value;
+    if (!companyId) throw new Error("No company selected");
+
+    const existing = await prisma.companySetting.findFirst({ where: { id: companyId } });
     if (existing) {
       await prisma.companySetting.update({
         where: { id: existing.id },
@@ -56,7 +57,7 @@ export async function updateCompanySettings(data: {
       });
     } else {
       await prisma.companySetting.create({
-        data: data
+        data: { ...data, id: companyId }
       });
     }
     

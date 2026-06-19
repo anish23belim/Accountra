@@ -61,11 +61,7 @@ export function LoginForm() {
         setError("Invalid email or password");
         setIsLoading(false);
       } else {
-        if (typeof window !== 'undefined' && localStorage.getItem('hasSeenTour')) {
-          router.push("/");
-        } else {
-          router.push("/onboarding");
-        }
+        router.push("/companies");
       }
     } catch (err) {
       setError("An unexpected error occurred");

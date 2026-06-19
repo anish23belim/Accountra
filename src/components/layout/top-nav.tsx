@@ -56,7 +56,7 @@ export function TopNav() {
   const pathname = usePathname();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  if (pathname === '/login' || pathname === '/onboarding') {
+  if (pathname === '/login' || pathname === '/onboarding' || pathname === '/companies') {
     return null;
   }
 
@@ -158,6 +158,12 @@ export function TopNav() {
             <Bell className="h-4 w-4" />
             <span className="absolute top-2 right-2.5 w-1.5 h-1.5 bg-red-500 rounded-full"></span>
           </Button>
+          <Link href="/companies">
+            <Button variant="outline" size="sm" className="hidden sm:flex rounded-full h-9 text-xs font-semibold px-4 border-slate-200 text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+              <Building2 className="w-3.5 h-3.5 mr-1.5" />
+              Switch Company
+            </Button>
+          </Link>
           <div onClick={() => signOut()} title="Sign Out" className="cursor-pointer group relative">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full blur opacity-0 group-hover:opacity-40 transition duration-300"></div>
             <Avatar className="h-9 w-9 border-2 border-white shadow-sm relative">

@@ -8,6 +8,14 @@ export function middleware(request: NextRequest) {
   if (!token) {
     return NextResponse.redirect(new URL('/login', request.url));
   }
+
+  const pathname = request.nextUrl.pathname;
+  if (pathname !== '/companies' && pathname !== '/onboarding' && pathname !== '/api/cron/backup') {
+    const companyId = request.cookies.get('companyId')?.value;
+    if (!companyId) {
+      return NextResponse.redirect(new URL('/companies', request.url));
+    }
+  }
   
   return NextResponse.next();
 }
