@@ -65,7 +65,7 @@ export function CreateReturnForm({ customers, products, locations }: { customers
   };
 
   const handleCreateCustomer = async () => {
-    if (!newCustomerName) return alert("Firm Name is required");
+    if (!newCustomerName) return alert(`${newCustomerType === 'Dealer' ? 'Firm Name' : 'Customer Name'} is required`);
     setIsCreatingCustomer(true);
     const res = await saveCustomer({ 
       name: newCustomerName, 
@@ -416,23 +416,25 @@ export function CreateReturnForm({ customers, products, locations }: { customers
                 <option value="Dealer">Dealer</option>
               </select>
             </div>
-            <div className="space-y-2">
-              <Label>Firm Name <span className="text-red-500">*</span></Label>
-              <Input 
-                value={newCustomerName} 
-                onChange={(e) => setNewCustomerName(e.target.value)} 
-                placeholder="e.g. Sharma Electronics" 
-                autoFocus 
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Dealer / Owner Name</Label>
-              <Input 
-                value={newCustomerContactPerson} 
-                onChange={(e) => setNewCustomerContactPerson(e.target.value)} 
-                placeholder="e.g. Ramesh Sharma" 
-              />
-            </div>
+              <div className="space-y-2">
+                <Label>{newCustomerType === 'Dealer' ? 'Firm Name' : 'Customer Name'} <span className="text-red-500">*</span></Label>
+                <Input 
+                  value={newCustomerName} 
+                  onChange={(e) => setNewCustomerName(e.target.value)} 
+                  placeholder={newCustomerType === 'Dealer' ? "e.g. Sharma Traders" : "e.g. Rahul Kumar"} 
+                  autoFocus 
+                />
+              </div>
+              {newCustomerType === 'Dealer' && (
+                <div className="space-y-2">
+                  <Label>Dealer / Owner Name</Label>
+                  <Input 
+                    value={newCustomerContactPerson} 
+                    onChange={(e) => setNewCustomerContactPerson(e.target.value)} 
+                    placeholder="e.g. Ramesh Sharma" 
+                  />
+                </div>
+              )}
             <div className="space-y-2">
               <Label>Phone Number</Label>
               <Input 

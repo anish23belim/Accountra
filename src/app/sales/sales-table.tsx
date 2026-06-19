@@ -116,11 +116,11 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     const address = settings?.address || "Company Address Here";
     doc.text(address, pageWidth / 2, currentY + 11, { align: "center" });
     
-    const contactStr = Mobile:  | Email: ;
+    const contactStr = `Mobile: ${settings?.mobile || settings?.telephone || "-"} | Email: ${settings?.email || "mail@domain.com"}`;
     doc.text(contactStr, pageWidth / 2, currentY + 16, { align: "center" });
     
     doc.setFont("helvetica", "bold");
-    const gstPanStr = GSTIN -  | PAN - N/A;
+    const gstPanStr = `GSTIN - ${settings?.gstNumber || "N/A"} | PAN - N/A`;
     doc.text(gstPanStr, pageWidth / 2, currentY + 21, { align: "center" });
 
     currentY += companySectionHeight;
@@ -140,27 +140,27 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     
     doc.text("Invoice Number", labelX, currentY + 5);
     doc.setFont("helvetica", "normal");
-    doc.text(: , valueX, currentY + 5);
+    doc.text(`: ${invoice.number}`, valueX, currentY + 5);
     
     doc.setFont("helvetica", "bold");
     doc.text("Invoice Date", labelX, currentY + 10);
     doc.setFont("helvetica", "normal");
-    doc.text(: , valueX, currentY + 10);
+    doc.text(`: ${invoice.date}`, valueX, currentY + 10);
     
     doc.setFont("helvetica", "bold");
     doc.text("Due Date", labelX, currentY + 15);
     doc.setFont("helvetica", "normal");
-    doc.text(: , valueX, currentY + 15); 
+    doc.text(`: ${invoice.date}`, valueX, currentY + 15); 
     
     doc.setFont("helvetica", "bold");
     doc.text("Place of Supply", labelX, currentY + 20);
     doc.setFont("helvetica", "normal");
-    doc.text(: State, valueX, currentY + 20);
+    doc.text(`: State`, valueX, currentY + 20);
     
     doc.setFont("helvetica", "bold");
     doc.text("Reverse Charge", labelX, currentY + 25);
     doc.setFont("helvetica", "normal");
-    doc.text(: No, valueX, currentY + 25);
+    doc.text(`: No`, valueX, currentY + 25);
     
     // Right side of invoice details (blank for now)
     
@@ -187,7 +187,7 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     doc.text(customerName, midX + 2, currentY + 10); // Same for shipping
     
     doc.setFont("helvetica", "normal");
-    const gstLine = GSTIN:  | Mobile: ;
+    const gstLine = `GSTIN: ${cGST} | Mobile: ${cMobile}`;
     doc.text(gstLine, margin + 2, currentY + 15);
     doc.text(gstLine, midX + 2, currentY + 15);
     
@@ -259,7 +259,7 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     
     // Amount in words
     doc.rect(margin, finalY, contentWidth, 8, 'S');
-    doc.text(Rs.  Only, margin + 2, finalY + 5.5);
+    doc.text(`Rs. ${Math.floor(invoice.amount)} Only`, margin + 2, finalY + 5.5);
     
     finalY += 8;
     
@@ -290,22 +290,22 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
     doc.setFontSize(8);
     doc.text("Account Number:", midBlockX, finalY + 20);
     doc.setFont("helvetica", "normal");
-    doc.text(${settings?.accountNumber || "-"}, midBlockX, finalY + 24);
+    doc.text(`${settings?.accountNumber || "-"}`, midBlockX, finalY + 24);
     
     doc.setFont("helvetica", "bold");
-    doc.text(Bank:, midBlockX, finalY + 30);
+    doc.text(`Bank:`, midBlockX, finalY + 30);
     doc.setFont("helvetica", "normal");
-    doc.text(${settings?.bankName || "-"}, midBlockX + 10, finalY + 30);
+    doc.text(`${settings?.bankName || "-"}`, midBlockX + 10, finalY + 30);
     
     doc.setFont("helvetica", "bold");
-    doc.text(IFSC:, midBlockX, finalY + 35);
+    doc.text(`IFSC:`, midBlockX, finalY + 35);
     doc.setFont("helvetica", "normal");
-    doc.text(${settings?.ifscCode || "-"}, midBlockX + 10, finalY + 35);
+    doc.text(`${settings?.ifscCode || "-"}`, midBlockX + 10, finalY + 35);
     
     // Signature (Right Block)
     const rightBlockX = margin + block1W + block2W;
     doc.setFont("helvetica", "bold");
-    doc.text(For , rightBlockX + 2, finalY + 5);
+    doc.text(`For ${settings?.name || "Company Name"}`, rightBlockX + 2, finalY + 5);
     
     doc.setFont("helvetica", "bold");
     doc.text("Signature", pageWidth - margin - 2, finalY + footerHeight - 2, { align: "right" });
@@ -314,7 +314,7 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
       const pdfUrl = doc.output('bloburl');
       window.open(pdfUrl, '_blank');
     } else {
-      doc.save(${invoice.number}.pdf);
+      doc.save(`${invoice.number}.pdf`);
     }
   };
   const handleWhatsAppShare = (invoice: Invoice) => {

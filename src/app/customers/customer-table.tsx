@@ -188,7 +188,7 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
           <TableHeader>
             <TableRow>
               <TableHead>Type</TableHead>
-              <TableHead>Firm Name</TableHead>
+              <TableHead>Firm / Customer Name</TableHead>
               <TableHead>Dealer / Contact</TableHead>
               <TableHead>Email/Phone</TableHead>
               <TableHead>GSTIN / PAN</TableHead>
@@ -260,23 +260,43 @@ export function CustomerTable({ initialData }: { initialData: Customer[] }) {
                 </select>
               </div>
               <div className="grid gap-2">
-                <Label htmlFor="name">Firm Name <span className="text-red-500">*</span></Label>
-                <Input id="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder="e.g. Sharma Electronics" />
+                <Label htmlFor="name">{formData.customerType === 'Dealer' ? 'Firm Name' : 'Customer Name'} <span className="text-red-500">*</span></Label>
+                <Input id="name" value={formData.name} onChange={e => setFormData({...formData, name: e.target.value})} placeholder={formData.customerType === 'Dealer' ? "e.g. Sharma Electronics" : "e.g. Rahul Kumar"} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="contactPerson">Dealer / Owner Name</Label>
-                <Input id="contactPerson" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} placeholder="e.g. Ramesh Sharma" />
+            {formData.customerType === 'Dealer' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="contactPerson">Dealer / Owner Name</Label>
+                  <Input id="contactPerson" value={formData.contactPerson} onChange={e => setFormData({...formData, contactPerson: e.target.value})} placeholder="e.g. Ramesh Sharma" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="e.g. 9876543210" />
+                </div>
               </div>
+            )}
+            {formData.customerType === 'Customer' && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="phone">Phone Number</Label>
+                  <Input id="phone" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="e.g. 9876543210" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email</Label>
+                  <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} placeholder="e.g. rahul@example.com" />
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="alias">Alias / Short Name</Label>
                 <Input id="alias" value={formData.alias} onChange={e => setFormData({...formData, alias: e.target.value})} />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input id="email" type="email" value={formData.email} onChange={e => setFormData({...formData, email: e.target.value})} />
