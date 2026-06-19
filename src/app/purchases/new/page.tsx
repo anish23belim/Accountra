@@ -1,17 +1,17 @@
 export const dynamic = 'force-dynamic';
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { CreatePurchaseForm } from "./create-purchase-form";
 
 export default async function NewPurchasePage() {
-  const suppliers = await prisma.supplier.findMany({
+  const suppliers = await (await getPrisma()).supplier.findMany({
     orderBy: { name: 'asc' }
   });
   
-  const products = await prisma.product.findMany({
+  const products = await (await getPrisma()).product.findMany({
     orderBy: { name: 'asc' }
   });
   
-  const locations = await prisma.location.findMany({
+  const locations = await (await getPrisma()).location.findMany({
     orderBy: { createdAt: 'asc' }
   });
 

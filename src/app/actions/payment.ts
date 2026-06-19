@@ -1,6 +1,6 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function createPayment(data: {
@@ -13,10 +13,12 @@ export async function createPayment(data: {
   purchaseId?: string;
   direction?: 'IN' | 'OUT'; // IN = Received from them, OUT = Paid to them
 }) {
+  const prisma = await getPrisma();
+
   try {
     const paymentNumber = `PAY-${Date.now().toString().slice(-6)}`;
     
-    await prisma.payment.create({
+    await (await getPrisma()).payment.create({
       data: {
         paymentNumber,
         amount: data.amount,
@@ -32,7 +34,7 @@ export async function createPayment(data: {
 
     // Update customer balance
     if (data.customerId) {
-      await prisma.customer.update({
+      await (await getPrisma()).customer.update({
         where: { id: data.customerId },
         data: {
           currentBalance: data.direction === 'OUT' 
@@ -45,7 +47,7 @@ export async function createPayment(data: {
 
     // Update supplier balance
     if (data.supplierId) {
-      await prisma.supplier.update({
+      await (await getPrisma()).supplier.update({
         where: { id: data.supplierId },
         data: {
           currentBalance: data.direction === 'IN'
@@ -58,10 +60,10 @@ export async function createPayment(data: {
 
     // Update invoice if linked
     if (data.invoiceId) {
-      const inv = await prisma.invoice.findUnique({ where: { id: data.invoiceId } });
+      const inv = await (await getPrisma()).invoice.findUnique({ where: { id: data.invoiceId } });
       if (inv) {
         const newPaid = inv.amountPaid + data.amount;
-        await prisma.invoice.update({
+        await (await getPrisma()).invoice.update({
           where: { id: data.invoiceId },
           data: {
             amountPaid: newPaid,
@@ -74,10 +76,10 @@ export async function createPayment(data: {
 
     // Update purchase if linked
     if (data.purchaseId) {
-      const pur = await prisma.purchase.findUnique({ where: { id: data.purchaseId } });
+      const pur = await (await getPrisma()).purchase.findUnique({ where: { id: data.purchaseId } });
       if (pur) {
         const newPaid = pur.amountPaid + data.amount;
-        await prisma.purchase.update({
+        await (await getPrisma()).purchase.update({
           where: { id: data.purchaseId },
           data: {
             amountPaid: newPaid,
@@ -97,11 +99,13 @@ export async function createPayment(data: {
 }
 
 export async function deletePayment(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    const payment = await prisma.payment.findUnique({ where: { id } });
+    const payment = await (await getPrisma()).payment.findUnique({ where: { id } });
     if (payment) {
         if (payment.customerId) {
-          await prisma.customer.update({
+          await (await getPrisma()).customer.update({
             where: { id: payment.customerId },
             data: { 
               currentBalance: payment.type === 'OUT' 
@@ -111,7 +115,7 @@ export async function deletePayment(id: string) {
           });
         }
         if (payment.supplierId) {
-          await prisma.supplier.update({
+          await (await getPrisma()).supplier.update({
             where: { id: payment.supplierId },
             data: { 
               currentBalance: payment.type === 'IN'
@@ -123,16 +127,16 @@ export async function deletePayment(id: string) {
     }
     
     
-    await prisma.payment.delete({
+    await (await getPrisma()).payment.delete({
       where: { id }
     });
     
     // Also revert invoice/purchase amountPaid
     if (payment && payment.invoiceId) {
-      const inv = await prisma.invoice.findUnique({ where: { id: payment.invoiceId } });
+      const inv = await (await getPrisma()).invoice.findUnique({ where: { id: payment.invoiceId } });
       if (inv) {
         const newPaid = Math.max(0, inv.amountPaid - payment.amount);
-        await prisma.invoice.update({
+        await (await getPrisma()).invoice.update({
           where: { id: payment.invoiceId },
           data: { amountPaid: newPaid, status: newPaid === 0 ? "UNPAID" : newPaid >= inv.totalAmount ? "PAID" : "PARTIAL" }
         });
@@ -140,10 +144,10 @@ export async function deletePayment(id: string) {
       }
     }
     if (payment && payment.purchaseId) {
-      const pur = await prisma.purchase.findUnique({ where: { id: payment.purchaseId } });
+      const pur = await (await getPrisma()).purchase.findUnique({ where: { id: payment.purchaseId } });
       if (pur) {
         const newPaid = Math.max(0, pur.amountPaid - payment.amount);
-        await prisma.purchase.update({
+        await (await getPrisma()).purchase.update({
           where: { id: payment.purchaseId },
           data: { amountPaid: newPaid, status: newPaid === 0 ? "UNPAID" : newPaid >= pur.totalAmount ? "PAID" : "PARTIAL" }
         });
@@ -161,9 +165,11 @@ export async function deletePayment(id: string) {
 }
 
 export async function getDueBills(partyId: string, type: "Customer" | "Supplier") {
+  const prisma = await getPrisma();
+
   try {
     if (type === "Customer") {
-      const bills = await prisma.invoice.findMany({
+      const bills = await (await getPrisma()).invoice.findMany({
         where: {
           customerId: partyId,
           status: { in: ["UNPAID", "PARTIAL"] }
@@ -180,7 +186,7 @@ export async function getDueBills(partyId: string, type: "Customer" | "Supplier"
         due: b.totalAmount - b.amountPaid
       }));
     } else {
-      const bills = await prisma.purchase.findMany({
+      const bills = await (await getPrisma()).purchase.findMany({
         where: {
           supplierId: partyId,
           status: { in: ["UNPAID", "PARTIAL"] }

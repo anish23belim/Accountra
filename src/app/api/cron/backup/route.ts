@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import nodemailer from "nodemailer";
 
 export async function GET(request: Request) {
   try {
     // 1. Get Company Settings for backup credentials
-    const settings = await prisma.companySetting.findFirst();
+    const settings = await (await getPrisma()).companySetting.findFirst();
     if (!settings || !settings.backupEmail || !settings.backupPassword) {
       return NextResponse.json(
         { error: "Backup email or password not configured in Company Settings." },
@@ -15,14 +15,14 @@ export async function GET(request: Request) {
 
     // 2. Fetch all important database tables
     const [products, customers, suppliers, invoices, purchases, payments, expenses, serials] = await Promise.all([
-      prisma.product.findMany(),
-      prisma.customer.findMany(),
-      prisma.supplier.findMany(),
-      prisma.invoice.findMany({ include: { items: true } }),
-      prisma.purchase.findMany({ include: { items: true } }),
-      prisma.payment.findMany(),
-      prisma.expense.findMany(),
-      prisma.serialNumber.findMany(),
+      (await getPrisma()).product.findMany(),
+      (await getPrisma()).customer.findMany(),
+      (await getPrisma()).supplier.findMany(),
+      (await getPrisma()).invoice.findMany({ include: { items: true } }),
+      (await getPrisma()).purchase.findMany({ include: { items: true } }),
+      (await getPrisma()).payment.findMany(),
+      (await getPrisma()).expense.findMany(),
+      (await getPrisma()).serialNumber.findMany(),
     ]);
 
     // 3. Create JSON payload

@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { PaymentsTable } from "./payments-table";
 
 export default async function PaymentsPage() {
-  const dbPayments = await prisma.payment.findMany({
+  const dbPayments = await (await getPrisma()).payment.findMany({
     include: {
       customer: true,
       supplier: true,
@@ -29,17 +29,17 @@ export default async function PaymentsPage() {
     appliedTo: p.invoice?.invoiceNumber || p.purchase?.billNumber || "Advance / On Account"
   }));
 
-  const customers = await prisma.customer.findMany({
+  const customers = await (await getPrisma()).customer.findMany({
     select: { id: true, name: true, currentBalance: true },
     orderBy: { name: 'asc' }
   });
 
-  const suppliers = await prisma.supplier.findMany({
+  const suppliers = await (await getPrisma()).supplier.findMany({
     select: { id: true, name: true, currentBalance: true },
     orderBy: { name: 'asc' }
   });
 
-  const settings = await prisma.companySetting.findFirst() || {};
+  const settings = await (await getPrisma()).companySetting.findFirst() || {};
 
   return (
     <div className="flex-1 space-y-4 p-4 md:p-8 pt-6">

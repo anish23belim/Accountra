@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function deletePurchase(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    const purchase = await prisma.purchase.findUnique({
+    const purchase = await (await getPrisma()).purchase.findUnique({
       where: { id },
       include: { items: true }
     });
@@ -13,26 +15,26 @@ export async function deletePurchase(id: string) {
     if (!purchase) return { success: false, error: "Purchase not found" };
 
     // Revert Supplier Balance
-    await prisma.supplier.update({
+    await (await getPrisma()).supplier.update({
       where: { id: purchase.supplierId },
       data: { currentBalance: { decrement: purchase.totalAmount } }
     });
 
     // Revert Stock
     for (const item of purchase.items) {
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: item.quantity } }
       });
       
       let targetLocationId = purchase.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.update({
+        await (await getPrisma()).locationStock.update({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           data: { quantity: { decrement: item.quantity } }
         });
@@ -41,13 +43,13 @@ export async function deletePurchase(id: string) {
       // Revert Serial Numbers (Delete them since they were created in this purchase)
       if (item.serialNumber && item.serialNumber.trim() !== "") {
         const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
-        await prisma.serialNumber.deleteMany({
+        await (await getPrisma()).serialNumber.deleteMany({
           where: { serialNum: { in: typedSerials } }
         });
       }
     }
 
-    await prisma.purchase.delete({
+    await (await getPrisma()).purchase.delete({
       where: { id }
     });
     
@@ -89,15 +91,17 @@ export async function createPurchase(data: {
   totalAmount: number;
   items: PurchaseItemInput[];
 }) {
+  const prisma = await getPrisma();
+
   try {
     // Determine the target location
     let targetLocationId = data.locationId;
     if (!targetLocationId) {
-      const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+      const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
       targetLocationId = defaultLoc?.id;
     }
 
-    const purchase = await prisma.purchase.create({
+    const purchase = await (await getPrisma()).purchase.create({
       data: {
         billNumber: data.billNumber || `PO-${Date.now().toString().slice(-6)}`,
         date: data.date ? new Date(data.date) : undefined,
@@ -129,7 +133,7 @@ export async function createPurchase(data: {
     });
 
     // Update supplier balance (increase balance because we owe them money)
-    await prisma.supplier.update({
+    await (await getPrisma()).supplier.update({
       where: { id: data.supplierId },
       data: {
         currentBalance: {
@@ -141,7 +145,7 @@ export async function createPurchase(data: {
     // Increase product stock AND LocationStock
     for (const item of data.items) {
       // 1. Overall Product Stock
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: {
           currentStock: {
@@ -152,7 +156,7 @@ export async function createPurchase(data: {
 
       // 2. Location Stock
       if (targetLocationId) {
-        await prisma.locationStock.upsert({
+        await (await getPrisma()).locationStock.upsert({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           update: { quantity: { increment: item.quantity } },
           create: { productId: item.productId, locationId: targetLocationId, quantity: item.quantity }
@@ -169,7 +173,7 @@ export async function createPurchase(data: {
           locationId: targetLocationId
         }));
         
-        await prisma.serialNumber.createMany({
+        await (await getPrisma()).serialNumber.createMany({
           data: serialData,
           skipDuplicates: true,
         });

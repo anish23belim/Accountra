@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function deleteProduct(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    await prisma.product.delete({
+    await (await getPrisma()).product.delete({
       where: { id }
     });
     revalidatePath("/products");
@@ -27,6 +29,8 @@ export async function saveProduct(data: {
   tracksSerial?: boolean;
   serialNumbers?: string[];
 }) {
+  const prisma = await getPrisma();
+
   try {
     let product: any;
     
@@ -44,12 +48,12 @@ export async function saveProduct(data: {
     };
 
     if (data.id) {
-      product = await prisma.product.update({
+      product = await (await getPrisma()).product.update({
         where: { id: data.id },
         data: productData
       });
     } else {
-      product = await prisma.product.create({
+      product = await (await getPrisma()).product.create({
         data: productData
       });
     }
@@ -57,9 +61,9 @@ export async function saveProduct(data: {
       // Process serial numbers if tracking is enabled
       if (data.tracksSerial && data.serialNumbers && data.serialNumbers.length > 0) {
         // Ensure Main Shop exists
-        let defaultLocation = await prisma.location.findFirst({ where: { isDefault: true } });
+        let defaultLocation = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         if (!defaultLocation) {
-          defaultLocation = await prisma.location.create({ data: { name: "Main Shop", isDefault: true } });
+          defaultLocation = await (await getPrisma()).location.create({ data: { name: "Main Shop", isDefault: true } });
         }
         
         const serialData = data.serialNumbers.map(sn => ({
@@ -69,28 +73,28 @@ export async function saveProduct(data: {
           locationId: defaultLocation!.id
         }));
         
-        await prisma.serialNumber.createMany({
+        await (await getPrisma()).serialNumber.createMany({
           data: serialData,
           skipDuplicates: true,
         });
         
-        const actualCount = await prisma.serialNumber.count({
+        const actualCount = await (await getPrisma()).serialNumber.count({
           where: { productId: product.id, status: "AVAILABLE", locationId: defaultLocation.id }
         });
         
         // Update LocationStock
-        await prisma.locationStock.upsert({
+        await (await getPrisma()).locationStock.upsert({
           where: { productId_locationId: { productId: product.id, locationId: defaultLocation.id } },
           update: { quantity: actualCount },
           create: { productId: product.id, locationId: defaultLocation.id, quantity: actualCount }
         });
         
         // Update Total Stock
-        const allStock = await prisma.serialNumber.count({
+        const allStock = await (await getPrisma()).serialNumber.count({
           where: { productId: product.id, status: "AVAILABLE" }
         });
         
-        product = await prisma.product.update({
+        product = await (await getPrisma()).product.update({
           where: { id: product.id },
           data: { currentStock: allStock }
         });
@@ -106,27 +110,29 @@ export async function saveProduct(data: {
 }
 
 export async function updateStock(id: string, newStock: number, locationId?: string) {
+  const prisma = await getPrisma();
+
   try {
     let targetLocationId = locationId;
     if (!targetLocationId) {
-      let defaultLocation = await prisma.location.findFirst({ where: { isDefault: true } });
+      let defaultLocation = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
       if (!defaultLocation) {
-        defaultLocation = await prisma.location.create({ data: { name: "Main Shop", isDefault: true } });
+        defaultLocation = await (await getPrisma()).location.create({ data: { name: "Main Shop", isDefault: true } });
       }
       targetLocationId = defaultLocation.id;
     }
 
-    await prisma.locationStock.upsert({
+    await (await getPrisma()).locationStock.upsert({
       where: { productId_locationId: { productId: id, locationId: targetLocationId } },
       update: { quantity: newStock },
       create: { productId: id, locationId: targetLocationId, quantity: newStock }
     });
 
     // Recalculate total stock for the product
-    const locationStocks = await prisma.locationStock.findMany({ where: { productId: id } });
+    const locationStocks = await (await getPrisma()).locationStock.findMany({ where: { productId: id } });
     const totalStock = locationStocks.reduce((acc, curr) => acc + curr.quantity, 0);
 
-    await prisma.product.update({
+    await (await getPrisma()).product.update({
       where: { id },
       data: { currentStock: totalStock }
     });
@@ -140,11 +146,13 @@ export async function updateStock(id: string, newStock: number, locationId?: str
 }
 
 export async function transferStock(productId: string, fromLocationId: string, toLocationId: string, quantity: number, serialNumbers?: string[]) {
+  const prisma = await getPrisma();
+
   try {
     if (fromLocationId === toLocationId) return { success: false, error: "Cannot transfer to the same location" };
     if (quantity <= 0) return { success: false, error: "Quantity must be greater than 0" };
 
-    const fromStock = await prisma.locationStock.findUnique({
+    const fromStock = await (await getPrisma()).locationStock.findUnique({
       where: { productId_locationId: { productId, locationId: fromLocationId } }
     });
 
@@ -157,7 +165,7 @@ export async function transferStock(productId: string, fromLocationId: string, t
         return { success: false, error: "Number of serials provided must match quantity to transfer" };
       }
       
-      const serials = await prisma.serialNumber.findMany({
+      const serials = await (await getPrisma()).serialNumber.findMany({
         where: {
           serialNum: { in: serialNumbers },
           productId: productId,
@@ -170,20 +178,20 @@ export async function transferStock(productId: string, fromLocationId: string, t
         return { success: false, error: "One or more serial numbers are invalid or not present in the source location." };
       }
 
-      await prisma.serialNumber.updateMany({
+      await (await getPrisma()).serialNumber.updateMany({
         where: { serialNum: { in: serialNumbers } },
         data: { locationId: toLocationId }
       });
     }
 
     // Decrement from source
-    await prisma.locationStock.update({
+    await (await getPrisma()).locationStock.update({
       where: { productId_locationId: { productId, locationId: fromLocationId } },
       data: { quantity: { decrement: quantity } }
     });
 
     // Increment in destination
-    await prisma.locationStock.upsert({
+    await (await getPrisma()).locationStock.upsert({
       where: { productId_locationId: { productId, locationId: toLocationId } },
       update: { quantity: { increment: quantity } },
       create: { productId, locationId: toLocationId, quantity }

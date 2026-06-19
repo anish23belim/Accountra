@@ -1,12 +1,14 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function createSalesReturn(data: any) {
+  const prisma = await getPrisma();
+
   try {
     const returnNumber = data.returnNumber || `SR-${Date.now().toString().slice(-6)}`;
-    const sr = await prisma.salesReturn.create({
+    const sr = await (await getPrisma()).salesReturn.create({
       data: {
         returnNumber: returnNumber,
         date: data.date ? new Date(data.date) : new Date(),
@@ -32,26 +34,26 @@ export async function createSalesReturn(data: any) {
     });
 
     // Customer Balance decreases (they returned goods, they owe us less)
-    await prisma.customer.update({
+    await (await getPrisma()).customer.update({
       where: { id: data.customerId },
       data: { currentBalance: { decrement: data.totalAmount } }
     });
 
     // Increase Stock
     for (const item of data.items) {
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: item.quantity } }
       });
       
       let targetLocationId = data.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.upsert({
+        await (await getPrisma()).locationStock.upsert({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           update: { quantity: { increment: item.quantity } },
           create: { productId: item.productId, locationId: targetLocationId, quantity: item.quantity }
@@ -65,7 +67,7 @@ export async function createSalesReturn(data: any) {
         // Find the SalesReturnItem we just created to link
         const srItem = sr.items.find(i => i.productId === item.productId && i.unitPrice === item.unitPrice);
         
-        await prisma.serialNumber.updateMany({
+        await (await getPrisma()).serialNumber.updateMany({
           where: { serialNum: { in: typedSerials } },
           data: { 
             status: "AVAILABLE",
@@ -89,9 +91,11 @@ export async function createSalesReturn(data: any) {
 }
 
 export async function createPurchaseReturn(data: any) {
+  const prisma = await getPrisma();
+
   try {
     const returnNumber = data.returnNumber || `PR-${Date.now().toString().slice(-6)}`;
-    const pr = await prisma.purchaseReturn.create({
+    const pr = await (await getPrisma()).purchaseReturn.create({
       data: {
         returnNumber: returnNumber,
         date: data.date ? new Date(data.date) : new Date(),
@@ -117,26 +121,26 @@ export async function createPurchaseReturn(data: any) {
     });
 
     // Supplier Balance decreases (we returned goods, we owe them less)
-    await prisma.supplier.update({
+    await (await getPrisma()).supplier.update({
       where: { id: data.supplierId },
       data: { currentBalance: { decrement: data.totalAmount } }
     });
 
     // Decrease Stock
     for (const item of data.items) {
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: item.quantity } }
       });
       
       let targetLocationId = data.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.upsert({
+        await (await getPrisma()).locationStock.upsert({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           update: { quantity: { decrement: item.quantity } },
           create: { productId: item.productId, locationId: targetLocationId, quantity: 0 }
@@ -149,7 +153,7 @@ export async function createPurchaseReturn(data: any) {
         
         const prItem = pr.items.find(i => i.productId === item.productId && i.unitPrice === item.unitPrice);
         
-        await prisma.serialNumber.updateMany({
+        await (await getPrisma()).serialNumber.updateMany({
           where: { serialNum: { in: typedSerials } },
           data: { 
             status: "RETURNED",
@@ -172,8 +176,10 @@ export async function createPurchaseReturn(data: any) {
 }
 
 export async function deleteSalesReturn(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    const sr = await prisma.salesReturn.findUnique({
+    const sr = await (await getPrisma()).salesReturn.findUnique({
       where: { id },
       include: { items: true }
     });
@@ -181,26 +187,26 @@ export async function deleteSalesReturn(id: string) {
     if (!sr) return { success: false, error: "Return not found" };
 
     // Revert Customer Balance (increase back)
-    await prisma.customer.update({
+    await (await getPrisma()).customer.update({
       where: { id: sr.customerId },
       data: { currentBalance: { increment: sr.totalAmount } }
     });
 
     // Revert Stock (decrease back)
     for (const item of sr.items) {
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: { currentStock: { decrement: item.quantity } }
       });
       
       let targetLocationId = sr.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.update({
+        await (await getPrisma()).locationStock.update({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           data: { quantity: { decrement: item.quantity } }
         });
@@ -208,14 +214,14 @@ export async function deleteSalesReturn(id: string) {
 
       if (item.serialNumber && item.serialNumber.trim() !== "") {
         const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
-        await prisma.serialNumber.updateMany({
+        await (await getPrisma()).serialNumber.updateMany({
           where: { serialNum: { in: typedSerials } },
           data: { status: "SOLD", salesReturnItemId: null }
         });
       }
     }
 
-    await prisma.salesReturn.delete({ where: { id } });
+    await (await getPrisma()).salesReturn.delete({ where: { id } });
 
     revalidatePath("/sales/returns");
     revalidatePath("/inventory");
@@ -228,8 +234,10 @@ export async function deleteSalesReturn(id: string) {
 }
 
 export async function deletePurchaseReturn(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    const pr = await prisma.purchaseReturn.findUnique({
+    const pr = await (await getPrisma()).purchaseReturn.findUnique({
       where: { id },
       include: { items: true }
     });
@@ -237,26 +245,26 @@ export async function deletePurchaseReturn(id: string) {
     if (!pr) return { success: false, error: "Return not found" };
 
     // Revert Supplier Balance (increase back)
-    await prisma.supplier.update({
+    await (await getPrisma()).supplier.update({
       where: { id: pr.supplierId },
       data: { currentBalance: { increment: pr.totalAmount } }
     });
 
     // Revert Stock (increase back)
     for (const item of pr.items) {
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: item.quantity } }
       });
       
       let targetLocationId = pr.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.upsert({
+        await (await getPrisma()).locationStock.upsert({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           update: { quantity: { increment: item.quantity } },
           create: { productId: item.productId, locationId: targetLocationId, quantity: item.quantity }
@@ -265,14 +273,14 @@ export async function deletePurchaseReturn(id: string) {
 
       if (item.serialNumber && item.serialNumber.trim() !== "") {
         const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
-        await prisma.serialNumber.updateMany({
+        await (await getPrisma()).serialNumber.updateMany({
           where: { serialNum: { in: typedSerials } },
           data: { status: "AVAILABLE", purchaseReturnItemId: null }
         });
       }
     }
 
-    await prisma.purchaseReturn.delete({ where: { id } });
+    await (await getPrisma()).purchaseReturn.delete({ where: { id } });
 
     revalidatePath("/purchases/returns");
     revalidatePath("/inventory");

@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function deleteSupplier(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    await prisma.supplier.delete({
+    await (await getPrisma()).supplier.delete({
       where: { id }
     });
     revalidatePath("/suppliers");
@@ -30,9 +32,11 @@ export async function saveSupplier(data: {
   creditPeriodDays?: number;
   balance?: number;
 }) {
+  const prisma = await getPrisma();
+
   try {
     if (data.id) {
-      await prisma.supplier.update({
+      await (await getPrisma()).supplier.update({
         where: { id: data.id },
         data: {
           name: data.name,
@@ -52,7 +56,7 @@ export async function saveSupplier(data: {
       revalidatePath("/suppliers");
       return { success: true, id: data.id };
     } else {
-      const newSup = await prisma.supplier.create({
+      const newSup = await (await getPrisma()).supplier.create({
         data: {
           name: data.name,
           alias: data.alias,

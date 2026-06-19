@@ -2,22 +2,22 @@ export const dynamic = 'force-dynamic';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Landmark, FileSpreadsheet, Download } from "lucide-react";
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export default async function TaxPage() {
-  const salesAgg = await prisma.invoice.aggregate({
+  const salesAgg = await (await getPrisma()).invoice.aggregate({
     _sum: {
       taxAmount: true
     }
   });
 
-  const purchasesAgg = await prisma.purchase.aggregate({
+  const purchasesAgg = await (await getPrisma()).purchase.aggregate({
     _sum: {
       taxAmount: true
     }
   });
 
-  const b2bInvoices = await prisma.invoice.count({
+  const b2bInvoices = await (await getPrisma()).invoice.count({
     where: {
       customer: {
         gstNumber: {
@@ -28,7 +28,7 @@ export default async function TaxPage() {
     }
   });
 
-  const b2cInvoices = await prisma.invoice.count({
+  const b2cInvoices = await (await getPrisma()).invoice.count({
     where: {
       OR: [
         { customer: { gstNumber: null } },

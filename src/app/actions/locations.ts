@@ -1,16 +1,18 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export async function getLocations() {
+  const prisma = await getPrisma();
+
   try {
-    let locations = await prisma.location.findMany({
+    let locations = await (await getPrisma()).location.findMany({
       orderBy: { createdAt: "asc" }
     });
     
     if (locations.length === 0) {
       // First time initialization: Create "Main Shop" and migrate existing stock
-      const mainShop = await prisma.location.create({
+      const mainShop = await (await getPrisma()).location.create({
         data: {
           name: "Main Shop",
           isDefault: true,
@@ -18,10 +20,10 @@ export async function getLocations() {
       });
       
       // Migrate existing products to LocationStock for "Main Shop"
-      const products = await prisma.product.findMany();
+      const products = await (await getPrisma()).product.findMany();
       for (const product of products) {
         if (product.currentStock > 0) {
-          await prisma.locationStock.create({
+          await (await getPrisma()).locationStock.create({
             data: {
               productId: product.id,
               locationId: mainShop.id,
@@ -32,7 +34,7 @@ export async function getLocations() {
       }
       
       // Migrate all existing serial numbers to "Main Shop"
-      await prisma.serialNumber.updateMany({
+      await (await getPrisma()).serialNumber.updateMany({
         where: { locationId: null },
         data: { locationId: mainShop.id }
       });
@@ -48,11 +50,13 @@ export async function getLocations() {
 }
 
 export async function createLocation(name: string) {
+  const prisma = await getPrisma();
+
   try {
-    const existing = await prisma.location.findUnique({ where: { name } });
+    const existing = await (await getPrisma()).location.findUnique({ where: { name } });
     if (existing) return { success: false, error: "Location already exists" };
     
-    const location = await prisma.location.create({
+    const location = await (await getPrisma()).location.create({
       data: { name }
     });
     return { success: true, location };
@@ -62,13 +66,15 @@ export async function createLocation(name: string) {
 }
 
 export async function deleteLocation(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    const loc = await prisma.location.findUnique({ where: { id } });
+    const loc = await (await getPrisma()).location.findUnique({ where: { id } });
     if (loc?.isDefault) {
       return { success: false, error: "Cannot delete the default Main Shop" };
     }
     
-    await prisma.location.delete({ where: { id } });
+    await (await getPrisma()).location.delete({ where: { id } });
     return { success: true };
   } catch (error: any) {
     return { success: false, error: error.message };

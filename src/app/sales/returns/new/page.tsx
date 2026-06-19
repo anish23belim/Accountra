@@ -1,17 +1,17 @@
 export const dynamic = 'force-dynamic';
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { CreateReturnForm } from "./create-return-form";
 
 export default async function NewSalesReturnPage() {
-  const customers = await prisma.customer.findMany({
+  const customers = await (await getPrisma()).customer.findMany({
     orderBy: { name: 'asc' }
   });
   
-  const products = await prisma.product.findMany({
+  const products = await (await getPrisma()).product.findMany({
     orderBy: { name: 'asc' }
   });
   
-  const locations = await prisma.location.findMany({
+  const locations = await (await getPrisma()).location.findMany({
     orderBy: { createdAt: 'asc' }
   });
 

@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { ExpenseTable } from "./expense-table";
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export default async function ExpensesPage() {
-  const expenses = await prisma.expense.findMany({
+  const expenses = await (await getPrisma()).expense.findMany({
     orderBy: { createdAt: 'desc' }
   });
 

@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export async function getReportData(type: string) {
+  const prisma = await getPrisma();
+
   try {
     if (type === "Sales Report") {
-      const invoices = await prisma.invoice.findMany({
+      const invoices = await (await getPrisma()).invoice.findMany({
         include: { customer: true, items: true },
         orderBy: { date: 'desc' }
       });
@@ -21,7 +23,7 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Purchase Report") {
-      const purchases = await prisma.purchase.findMany({
+      const purchases = await (await getPrisma()).purchase.findMany({
         include: { supplier: true, items: true },
         orderBy: { date: 'desc' }
       });
@@ -38,11 +40,11 @@ export async function getReportData(type: string) {
 
     if (type === "GST Report") {
       // Gather all sales and purchases
-      const sales = await prisma.invoice.findMany({
+      const sales = await (await getPrisma()).invoice.findMany({
         include: { customer: true },
         orderBy: { date: 'asc' }
       });
-      const purchases = await prisma.purchase.findMany({
+      const purchases = await (await getPrisma()).purchase.findMany({
         include: { supplier: true },
         orderBy: { date: 'asc' }
       });
@@ -80,7 +82,7 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Inventory Report") {
-      const products = await prisma.product.findMany({
+      const products = await (await getPrisma()).product.findMany({
         orderBy: { name: 'asc' }
       });
       return products.map(p => ({
@@ -95,7 +97,7 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Expense Report") {
-      const expenses = await prisma.expense.findMany({ orderBy: { date: 'desc' } });
+      const expenses = await (await getPrisma()).expense.findMany({ orderBy: { date: 'desc' } });
       return expenses.map(e => ({
         "Date": e.date.toISOString().split("T")[0],
         "Category": e.category,
@@ -106,7 +108,7 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Customer Statement") {
-      const customers = await prisma.customer.findMany({ orderBy: { name: 'asc' } });
+      const customers = await (await getPrisma()).customer.findMany({ orderBy: { name: 'asc' } });
       return customers.map(c => ({
         "Name": c.name,
         "Type": c.customerType,
@@ -117,7 +119,7 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Supplier Statement") {
-      const suppliers = await prisma.supplier.findMany({ orderBy: { name: 'asc' } });
+      const suppliers = await (await getPrisma()).supplier.findMany({ orderBy: { name: 'asc' } });
       return suppliers.map(s => ({
         "Name": s.name,
         "Phone": s.phone || "-",
@@ -127,9 +129,9 @@ export async function getReportData(type: string) {
     }
 
     if (type === "Profit & Loss") {
-      const sales = await prisma.invoice.findMany();
-      const purchases = await prisma.purchase.findMany();
-      const expenses = await prisma.expense.findMany();
+      const sales = await (await getPrisma()).invoice.findMany();
+      const purchases = await (await getPrisma()).purchase.findMany();
+      const expenses = await (await getPrisma()).expense.findMany();
       
       const totalSales = sales.reduce((sum, s) => sum + s.totalAmount, 0);
       const totalPurchases = purchases.reduce((sum, p) => sum + p.totalAmount, 0);
@@ -157,20 +159,22 @@ export async function getReportData(type: string) {
 }
 
 export async function getProfitLossStats() {
+  const prisma = await getPrisma();
+
   try {
     const currentYear = new Date().getFullYear();
     const startDate = new Date(currentYear, 0, 1);
     const endDate = new Date(currentYear, 11, 31, 23, 59, 59);
 
-    const sales = await prisma.invoice.findMany({
+    const sales = await (await getPrisma()).invoice.findMany({
       where: { date: { gte: startDate, lte: endDate } }
     });
     
-    const purchases = await prisma.purchase.findMany({
+    const purchases = await (await getPrisma()).purchase.findMany({
       where: { date: { gte: startDate, lte: endDate } }
     });
 
-    const expenses = await prisma.expense.findMany({
+    const expenses = await (await getPrisma()).expense.findMany({
       where: { date: { gte: startDate, lte: endDate } }
     });
 

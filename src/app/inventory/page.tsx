@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { InventoryTable } from "./inventory-table";
 
 export default async function InventoryPage() {
-  const products = await prisma.product.findMany({
+  const products = await (await getPrisma()).product.findMany({
     orderBy: { name: 'asc' },
     select: {
       id: true,
@@ -18,7 +18,7 @@ export default async function InventoryPage() {
     }
   });
 
-  const locations = await prisma.location.findMany({
+  const locations = await (await getPrisma()).location.findMany({
     orderBy: { createdAt: 'asc' }
   });
 

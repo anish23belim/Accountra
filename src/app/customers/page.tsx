@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { CustomerTable } from "./customer-table";
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export default async function CustomersPage() {
-  const customers = await prisma.customer.findMany({
+  const customers = await (await getPrisma()).customer.findMany({
     orderBy: { createdAt: 'desc' }
   });
 

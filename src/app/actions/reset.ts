@@ -1,37 +1,39 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function resetTransactionData() {
+  const prisma = await getPrisma();
+
   try {
     // Delete all transaction records
-    await prisma.invoiceItem.deleteMany();
-    await prisma.invoice.deleteMany();
-    await prisma.purchaseItem.deleteMany();
-    await prisma.purchase.deleteMany();
-    await prisma.expense.deleteMany();
-    await prisma.payment.deleteMany();
-    await prisma.serialNumber.deleteMany();
+    await (await getPrisma()).invoiceItem.deleteMany();
+    await (await getPrisma()).invoice.deleteMany();
+    await (await getPrisma()).purchaseItem.deleteMany();
+    await (await getPrisma()).purchase.deleteMany();
+    await (await getPrisma()).expense.deleteMany();
+    await (await getPrisma()).payment.deleteMany();
+    await (await getPrisma()).serialNumber.deleteMany();
 
     // Reset Stock
-    await prisma.locationStock.deleteMany();
-    await prisma.product.updateMany({
+    await (await getPrisma()).locationStock.deleteMany();
+    await (await getPrisma()).product.updateMany({
       data: { currentStock: 0 }
     });
 
     // Reset Balances to Opening Balances
-    const customers = await prisma.customer.findMany();
+    const customers = await (await getPrisma()).customer.findMany();
     for (const c of customers) {
-      await prisma.customer.update({
+      await (await getPrisma()).customer.update({
         where: { id: c.id },
         data: { currentBalance: c.openingBalance }
       });
     }
 
-    const suppliers = await prisma.supplier.findMany();
+    const suppliers = await (await getPrisma()).supplier.findMany();
     for (const s of suppliers) {
-      await prisma.supplier.update({
+      await (await getPrisma()).supplier.update({
         where: { id: s.id },
         data: { currentBalance: s.openingBalance }
       });

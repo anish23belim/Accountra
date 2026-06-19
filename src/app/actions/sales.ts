@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function deleteInvoice(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    const invoice = await prisma.invoice.findUnique({
+    const invoice = await (await getPrisma()).invoice.findUnique({
       where: { id },
       include: { items: true }
     });
@@ -13,26 +15,26 @@ export async function deleteInvoice(id: string) {
     if (!invoice) return { success: false, error: "Invoice not found" };
 
     // Revert Customer Balance
-    await prisma.customer.update({
+    await (await getPrisma()).customer.update({
       where: { id: invoice.customerId },
       data: { currentBalance: { decrement: invoice.totalAmount } }
     });
 
     // Revert Stock
     for (const item of invoice.items) {
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: { currentStock: { increment: item.quantity } }
       });
       
       let targetLocationId = invoice.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id || null;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.update({
+        await (await getPrisma()).locationStock.update({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           data: { quantity: { increment: item.quantity } }
         });
@@ -41,14 +43,14 @@ export async function deleteInvoice(id: string) {
       // Revert Serial Numbers
       if (item.serialNumber && item.serialNumber.trim() !== "") {
         const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
-        await prisma.serialNumber.updateMany({
+        await (await getPrisma()).serialNumber.updateMany({
           where: { serialNum: { in: typedSerials } },
           data: { status: "AVAILABLE" }
         });
       }
     }
 
-    await prisma.invoice.delete({
+    await (await getPrisma()).invoice.delete({
       where: { id }
     });
     
@@ -92,22 +94,24 @@ export async function createInvoice(data: {
   totalAmount: number;
   items: InvoiceItemInput[];
 }) {
+  const prisma = await getPrisma();
+
   try {
     // Validate stock and serial numbers for all items
     for (const item of data.items) {
-      const product = await prisma.product.findUnique({ where: { id: item.productId } });
+      const product = await (await getPrisma()).product.findUnique({ where: { id: item.productId } });
       if (!product) {
         return { success: false, error: `Product not found.` };
       }
       
       let targetLocationId = data.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id;
       }
       
       if (targetLocationId) {
-        const locStock = await prisma.locationStock.findUnique({
+        const locStock = await (await getPrisma()).locationStock.findUnique({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } }
         });
         const avail = locStock?.quantity || 0;
@@ -125,7 +129,7 @@ export async function createInvoice(data: {
         const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
         
         // Fetch all purchased serials
-        const purchases = await prisma.purchaseItem.findMany({
+        const purchases = await (await getPrisma()).purchaseItem.findMany({
           where: { productId: item.productId },
           select: { serialNumber: true }
         });
@@ -137,13 +141,13 @@ export async function createInvoice(data: {
         });
         
         // Also fetch directly tracked SerialNumber records (Opening Stock)
-        const trackedSerials = await prisma.serialNumber.findMany({
+        const trackedSerials = await (await getPrisma()).serialNumber.findMany({
           where: { productId: item.productId }
         });
         trackedSerials.forEach(ts => purchasedSerials.add(ts.serialNum));
 
         // Fetch all sold serials
-        const sales = await prisma.invoiceItem.findMany({
+        const sales = await (await getPrisma()).invoiceItem.findMany({
           where: { productId: item.productId },
           select: { serialNumber: true }
         });
@@ -170,7 +174,7 @@ export async function createInvoice(data: {
     let finalNarration = data.narration;
 
     if (data.isCashSale && data.cashCustomerName) {
-      const newCustomer = await prisma.customer.create({
+      const newCustomer = await (await getPrisma()).customer.create({
         data: {
           name: data.cashCustomerName,
           phone: data.cashCustomerPhone || null,
@@ -189,7 +193,7 @@ export async function createInvoice(data: {
     const invoiceNumber = `INV-${Date.now().toString().slice(-6)}`;
     
     // Create the invoice with its items
-    const invoice = await prisma.invoice.create({
+    const invoice = await (await getPrisma()).invoice.create({
       data: {
         invoiceNumber,
         customerId: actualCustomerId,
@@ -222,7 +226,7 @@ export async function createInvoice(data: {
 
     // Update customer balance (increase balance because they owe money)
     // If it's a cash sale, the balance increases here, but we will immediately create a payment to decrease it
-    await prisma.customer.update({
+    await (await getPrisma()).customer.update({
       where: { id: actualCustomerId },
       data: {
         currentBalance: {
@@ -233,7 +237,7 @@ export async function createInvoice(data: {
 
     // Handle Cash Sale Payment
     if (data.isCashSale) {
-      await prisma.payment.create({
+      await (await getPrisma()).payment.create({
         data: {
           paymentNumber: `PAY-${Date.now().toString().slice(-6)}`,
           date: data.date ? new Date(data.date) : new Date(),
@@ -246,7 +250,7 @@ export async function createInvoice(data: {
       });
 
       // Decrease customer balance immediately because it's paid
-      await prisma.customer.update({
+      await (await getPrisma()).customer.update({
         where: { id: actualCustomerId },
         data: {
           currentBalance: {
@@ -259,7 +263,7 @@ export async function createInvoice(data: {
     // Reduce product stock and location stock
     for (const item of data.items) {
       // 1. Reduce overall stock
-      await prisma.product.update({
+      await (await getPrisma()).product.update({
         where: { id: item.productId },
         data: {
           currentStock: {
@@ -271,12 +275,12 @@ export async function createInvoice(data: {
       // 2. Reduce location specific stock
       let targetLocationId = data.locationId;
       if (!targetLocationId) {
-        const defaultLoc = await prisma.location.findFirst({ where: { isDefault: true } });
+        const defaultLoc = await (await getPrisma()).location.findFirst({ where: { isDefault: true } });
         targetLocationId = defaultLoc?.id;
       }
       
       if (targetLocationId) {
-        await prisma.locationStock.update({
+        await (await getPrisma()).locationStock.update({
           where: { productId_locationId: { productId: item.productId, locationId: targetLocationId } },
           data: {
             quantity: {
@@ -288,7 +292,7 @@ export async function createInvoice(data: {
         // Also update SerialNumber records if applicable
         if (item.serialNumber && item.serialNumber.trim() !== "") {
           const typedSerials = item.serialNumber.split(",").map(s => s.trim()).filter(Boolean);
-          await prisma.serialNumber.updateMany({
+          await (await getPrisma()).serialNumber.updateMany({
             where: { serialNum: { in: typedSerials } },
             data: { status: "SOLD" }
           });

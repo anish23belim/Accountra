@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function deleteExpense(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    await prisma.expense.delete({
+    await (await getPrisma()).expense.delete({
       where: { id }
     });
     revalidatePath("/expenses");
@@ -23,9 +25,11 @@ export async function saveExpense(data: {
   amount: number;
   paymentMethod: string;
 }) {
+  const prisma = await getPrisma();
+
   try {
     if (data.id) {
-      await prisma.expense.update({
+      await (await getPrisma()).expense.update({
         where: { id: data.id },
         data: {
           category: data.category,
@@ -35,7 +39,7 @@ export async function saveExpense(data: {
         }
       });
     } else {
-      await prisma.expense.create({
+      await (await getPrisma()).expense.create({
         data: {
           category: data.category,
           description: data.description,

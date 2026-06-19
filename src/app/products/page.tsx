@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
 import { ProductTable } from "./product-table";
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export default async function ProductsPage() {
-  const products = await prisma.product.findMany({
+  const products = await (await getPrisma()).product.findMany({
     orderBy: { createdAt: 'desc' },
     include: { serialNumbers: { where: { status: 'AVAILABLE' } } }
   });

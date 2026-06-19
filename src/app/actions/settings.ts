@@ -1,15 +1,16 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function getCompanySettings() {
+  const prisma = await getPrisma();
+
   try {
     let settings = await prisma.companySetting.findFirst();
     if (!settings) {
       settings = await prisma.companySetting.create({
         data: {
-          id: "1",
           name: "Accountra Inc",
         }
       });
@@ -44,15 +45,20 @@ export async function updateCompanySettings(data: {
   backupEmail?: string;
   backupPassword?: string;
 }) {
+  const prisma = await getPrisma();
+
   try {
-    await prisma.companySetting.upsert({
-      where: { id: "1" },
-      update: data,
-      create: {
-        id: "1",
-        ...data
-      }
-    });
+    const existing = await prisma.companySetting.findFirst();
+    if (existing) {
+      await prisma.companySetting.update({
+        where: { id: existing.id },
+        data: data
+      });
+    } else {
+      await prisma.companySetting.create({
+        data: data
+      });
+    }
     
     revalidatePath("/settings");
     revalidatePath("/"); // Update layout/nav if it uses settings

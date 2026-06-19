@@ -1,10 +1,10 @@
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export const dynamic = "force-dynamic";
 
 export default async function CashbookPage() {
-  const payments = await prisma.payment.findMany({
+  const payments = await (await getPrisma()).payment.findMany({
     where: {
       method: { in: ["Cash", "CASH", "cash"] }
     },
@@ -15,7 +15,7 @@ export default async function CashbookPage() {
     orderBy: { date: 'asc' }
   });
 
-  const expenses = await prisma.expense.findMany({
+  const expenses = await (await getPrisma()).expense.findMany({
     where: {
       paymentMethod: { in: ["Cash", "CASH", "cash"] }
     },

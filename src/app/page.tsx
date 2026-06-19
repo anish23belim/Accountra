@@ -3,13 +3,13 @@ import { Overview } from "@/components/dashboard/overview";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { DollarSign, Users, Package, CreditCard, AlertCircle, ArrowUpRight, ArrowDownRight, TrendingUp, Wallet, Banknote, ShoppingCart } from "lucide-react";
 import Link from "next/link";
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 
 export const dynamic = 'force-dynamic';
 
 export default async function Dashboard() {
   // 1. Fetch real aggregated data
-  const invoicesWithItems = await prisma.invoice.findMany({
+  const invoicesWithItems = await (await getPrisma()).invoice.findMany({
     include: { items: { include: { product: true } } }
   });
 
@@ -24,7 +24,7 @@ export default async function Dashboard() {
     });
   });
 
-  const returnsWithItems = await prisma.salesReturn.findMany({
+  const returnsWithItems = await (await getPrisma()).salesReturn.findMany({
     include: { items: { include: { product: true } } }
   });
 
@@ -36,32 +36,32 @@ export default async function Dashboard() {
     });
   });
 
-  const totalPurchasesAggr = await prisma.purchase.aggregate({ _sum: { totalAmount: true } });
-  const purchaseReturnsAggr = await prisma.purchaseReturn.aggregate({ _sum: { totalAmount: true } });
+  const totalPurchasesAggr = await (await getPrisma()).purchase.aggregate({ _sum: { totalAmount: true } });
+  const purchaseReturnsAggr = await (await getPrisma()).purchaseReturn.aggregate({ _sum: { totalAmount: true } });
   const totalPurchases = (totalPurchasesAggr._sum.totalAmount || 0) - (purchaseReturnsAggr._sum.totalAmount || 0);
 
-  const totalExpensesAggr = await prisma.expense.aggregate({ _sum: { amount: true } });
+  const totalExpensesAggr = await (await getPrisma()).expense.aggregate({ _sum: { amount: true } });
   const totalExpenses = totalExpensesAggr._sum.amount || 0;
 
   // Real Profit (Gross Margin - Expenses)
   const totalProfit = totalSales - totalCOGS - totalExpenses;
 
-  const activeCustomers = await prisma.customer.count();
+  const activeCustomers = await (await getPrisma()).customer.count();
 
   // Pending money owed to us
-  const pendingReceivablesAggr = await prisma.customer.aggregate({ 
+  const pendingReceivablesAggr = await (await getPrisma()).customer.aggregate({ 
     _sum: { currentBalance: true },
     where: { currentBalance: { gt: 0 } }
   });
   const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
 
   // Pending money we owe
-  const pendingPayablesSupplierAggr = await prisma.supplier.aggregate({ 
+  const pendingPayablesSupplierAggr = await (await getPrisma()).supplier.aggregate({ 
     _sum: { currentBalance: true },
     where: { currentBalance: { gt: 0 } }
   });
   
-  const pendingPayablesCustomerAggr = await prisma.customer.aggregate({
+  const pendingPayablesCustomerAggr = await (await getPrisma()).customer.aggregate({
     _sum: { currentBalance: true },
     where: { currentBalance: { lt: 0 } }
   });
@@ -69,11 +69,11 @@ export default async function Dashboard() {
   const pendingPayables = (pendingPayablesSupplierAggr._sum.currentBalance || 0) + Math.abs(pendingPayablesCustomerAggr._sum.currentBalance || 0);
 
   // Low stock products
-  const products = await prisma.product.findMany();
+  const products = await (await getPrisma()).product.findMany();
   const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
 
   // Calculate actual Bank/Cash Balance based on Payments
-  const allPayments = await prisma.payment.findMany({ select: { amount: true, type: true } });
+  const allPayments = await (await getPrisma()).payment.findMany({ select: { amount: true, type: true } });
   let totalReceived = 0;
   let totalSent = 0;
   allPayments.forEach(p => {
@@ -86,12 +86,12 @@ export default async function Dashboard() {
   // 2. Fetch data for the Chart (Current Year Monthly Data)
   const currentYear = new Date().getFullYear();
   
-  const allPurchases = await prisma.purchase.findMany({
+  const allPurchases = await (await getPrisma()).purchase.findMany({
     where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
     select: { date: true, totalAmount: true }
   });
   
-  const allExpenses = await prisma.expense.findMany({
+  const allExpenses = await (await getPrisma()).expense.findMany({
     where: { date: { gte: new Date(`${currentYear}-01-01`), lte: new Date(`${currentYear}-12-31`) } },
     select: { date: true, amount: true }
   });
@@ -134,7 +134,7 @@ export default async function Dashboard() {
   });
 
   // Recent transactions (Top 5 sales)
-  const recentInvoices = await prisma.invoice.findMany({
+  const recentInvoices = await (await getPrisma()).invoice.findMany({
     take: 5,
     orderBy: { createdAt: 'desc' },
     include: { customer: true }

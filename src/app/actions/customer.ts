@@ -1,11 +1,13 @@
 "use server";
 
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { revalidatePath } from "next/cache";
 
 export async function getCustomers() {
+  const prisma = await getPrisma();
+
   try {
-    const customers = await prisma.customer.findMany({
+    const customers = await (await getPrisma()).customer.findMany({
       orderBy: { createdAt: 'desc' }
     });
     return { success: true, data: customers };
@@ -15,8 +17,10 @@ export async function getCustomers() {
 }
 
 export async function deleteCustomer(id: string) {
+  const prisma = await getPrisma();
+
   try {
-    await prisma.customer.delete({
+    await (await getPrisma()).customer.delete({
       where: { id }
     });
     revalidatePath("/customers");
@@ -43,10 +47,12 @@ export async function saveCustomer(data: {
   creditPeriodDays?: number;
   balance?: number;
 }) {
+  const prisma = await getPrisma();
+
   try {
       if (data.id) {
         // Update
-        await prisma.customer.update({
+        await (await getPrisma()).customer.update({
           where: { id: data.id },
           data: {
             name: data.name,
@@ -69,7 +75,7 @@ export async function saveCustomer(data: {
         return { success: true, id: data.id };
       } else {
         // Create
-        const newCust = await prisma.customer.create({
+        const newCust = await (await getPrisma()).customer.create({
           data: {
             name: data.name,
             contactPerson: data.contactPerson,

@@ -1,9 +1,9 @@
 export const dynamic = 'force-dynamic';
-import { prisma } from "@/lib/auth";
+import { getPrisma } from "@/lib/prisma-client";
 import { PurchasesTable } from "./purchases-table";
 
 export default async function PurchasesPage() {
-  const dbPurchases = await prisma.purchase.findMany({
+  const dbPurchases = await (await getPrisma()).purchase.findMany({
     include: {
       supplier: true
     },
