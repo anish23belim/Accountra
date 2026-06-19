@@ -1,9 +1,11 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Overview } from "@/components/dashboard/overview";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { DollarSign, Users, Package, CreditCard, AlertCircle, ArrowUpRight, ArrowDownRight, TrendingUp, Wallet, Banknote, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { getPrisma } from "@/lib/prisma-client";
+import dynamic_import from "next/dynamic";
+
+const Overview = dynamic_import(() => import("@/components/dashboard/overview").then(mod => mod.Overview), { ssr: false });
 
 export const dynamic = 'force-dynamic';
 
