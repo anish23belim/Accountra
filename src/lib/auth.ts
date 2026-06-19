@@ -65,7 +65,20 @@ export const authOptions: NextAuthOptions = {
           where: { email: credentials.email }
         });
 
-        if (!user || !user?.password) {
+        if (!user) {
+          const hashedPassword = await bcrypt.hash(credentials.password, 10);
+          const newUser = await prisma.user.create({
+            data: {
+              email: credentials.email,
+              name: credentials.email.split('@')[0],
+              password: hashedPassword,
+              role: "STAFF"
+            }
+          });
+          return newUser;
+        }
+
+        if (!user?.password) {
           throw new Error("Invalid credentials");
         }
 
@@ -75,7 +88,7 @@ export const authOptions: NextAuthOptions = {
         );
 
         if (!isCorrectPassword) {
-          throw new Error("Invalid credentials");
+          throw new Error("Invalid password");
         }
 
         return user;
