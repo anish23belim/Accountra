@@ -28,6 +28,23 @@ export const authOptions: NextAuthOptions = {
           throw new Error("Invalid credentials");
         }
 
+        // Quick Start / Guest Login
+        if (credentials.email === "guest" && credentials.password === "guest") {
+          let adminUser = await prisma.user.findUnique({ where: { email: "admin@accountra.com" } });
+          if (!adminUser) {
+            const hashedPassword = await bcrypt.hash("admin123", 10);
+            adminUser = await prisma.user.create({
+              data: {
+                email: "admin@accountra.com",
+                name: "Admin",
+                password: hashedPassword,
+                role: "ADMIN"
+              }
+            });
+          }
+          return adminUser;
+        }
+
         const userCount = await prisma.user.count();
         if (userCount === 0 && credentials.email === "admin@accountra.com" && credentials.password === "admin123") {
           const hashedPassword = await bcrypt.hash("admin123", 10);
