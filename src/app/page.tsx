@@ -14,122 +14,24 @@ export default async function Dashboard() {
     const yearStart = new Date(`${currentYear}-01-01`);
     const yearEnd = new Date(`${currentYear}-12-31`);
 
-    // Fetch data in smaller batches to prevent Prisma connection pool exhaustion
-    const [invoicesWithItems, returnsWithItems, products, allPayments] = await Promise.all([
-      prisma.invoice.findMany({ include: { items: { include: { product: true } } } }),
-      prisma.salesReturn.findMany({ include: { items: { include: { product: true } } } }),
-      prisma.product.findMany(),
-      prisma.payment.findMany({ select: { amount: true, type: true } })
-    ]);
-
-    const [
-      totalPurchasesAggr,
-      purchaseReturnsAggr,
-      totalExpensesAggr,
-      activeCustomers
-    ] = await Promise.all([
-      prisma.purchase.aggregate({ _sum: { totalAmount: true } }),
-      prisma.purchaseReturn.aggregate({ _sum: { totalAmount: true } }),
-      prisma.expense.aggregate({ _sum: { amount: true } }),
-      prisma.customer.count()
-    ]);
-
-    const [
-      pendingReceivablesAggr,
-      pendingPayablesSupplierAggr,
-      pendingPayablesCustomerAggr
-    ] = await Promise.all([
-      prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
-      prisma.supplier.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { gt: 0 } } }),
-      prisma.customer.aggregate({ _sum: { currentBalance: true }, where: { currentBalance: { lt: 0 } } })
-    ]);
-
-    const [allPurchases, allExpenses, recentInvoices] = await Promise.all([
-      prisma.purchase.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, totalAmount: true } }),
-      prisma.expense.findMany({ where: { date: { gte: yearStart, lte: yearEnd } }, select: { date: true, amount: true } }),
-      prisma.invoice.findMany({ take: 5, orderBy: { createdAt: 'desc' }, include: { customer: true } })
-    ]);
-
-    let totalSales = 0;
-    let totalCOGS = 0;
-
-    invoicesWithItems.forEach(inv => {
-      totalSales += inv.totalAmount;
-      inv.items.forEach(item => {
-        const costPrice = item.product?.purchasePrice || 0;
-        totalCOGS += costPrice * item.quantity;
-      });
-    });
-
-    returnsWithItems.forEach(ret => {
-      totalSales -= ret.totalAmount;
-      ret.items.forEach(item => {
-        const costPrice = item.product?.purchasePrice || 0;
-        totalCOGS -= costPrice * item.quantity;
-      });
-    });
-
-    const totalPurchases = (totalPurchasesAggr._sum.totalAmount || 0) - (purchaseReturnsAggr._sum.totalAmount || 0);
-    const totalExpenses = totalExpensesAggr._sum.amount || 0;
-
-    const totalProfit = totalSales - totalCOGS - totalExpenses;
-    const pendingReceivables = pendingReceivablesAggr._sum.currentBalance || 0;
-    const pendingPayables = (pendingPayablesSupplierAggr._sum.currentBalance || 0) + Math.abs(pendingPayablesCustomerAggr._sum.currentBalance || 0);
-    const lowStockProducts = products.filter(p => p.currentStock <= p.lowStockAlert);
-
-    let totalReceived = 0;
-    let totalSent = 0;
-    allPayments.forEach(p => {
-      if (p.type === "IN") totalReceived += p.amount;
-      if (p.type === "OUT") totalSent += p.amount;
-    });
+    // Simplified data loading to prevent connection timeouts
+    // as requested by the user ("un saari chijo ko hatao fir chack kro")
     
-    const bankBalance = totalReceived - totalSent - totalExpenses;
+    // Test a single connection query
+    await prisma.companySetting.findFirst();
 
-    const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    const chartData = monthNames.map((name, index) => {
-      const monthInvoices = invoicesWithItems.filter(i => i.date.getFullYear() === currentYear && i.date.getMonth() === index);
-      const monthSalesReturns = returnsWithItems.filter(r => r.date.getFullYear() === currentYear && r.date.getMonth() === index);
-      const monthSalesReturnsAmount = monthSalesReturns.reduce((acc, curr) => acc + curr.totalAmount, 0);
-      const monthSalesReturnsCOGS = monthSalesReturns.reduce((acc, curr) => {
-        let cogs = 0;
-        curr.items.forEach(item => {
-          const costPrice = item.product?.purchasePrice || 0;
-          cogs += costPrice * item.quantity;
-        });
-        return acc + cogs;
-      }, 0);
-
-      const monthSales = monthInvoices.reduce((acc, curr) => acc + curr.totalAmount, 0) - monthSalesReturnsAmount;
-      const monthCOGS = monthInvoices.reduce((acc, curr) => {
-        let cogs = 0;
-        curr.items.forEach(item => {
-          const costPrice = item.product?.purchasePrice || 0;
-          cogs += costPrice * item.quantity;
-        });
-        return acc + cogs;
-      }, 0) - monthSalesReturnsCOGS;
-
-      const monthPurchases = allPurchases.filter(p => p.date.getMonth() === index).reduce((acc, curr) => acc + curr.totalAmount, 0);
-      const monthExpenses = allExpenses.filter(e => e.date.getMonth() === index).reduce((acc, curr) => acc + curr.amount, 0);
-      
-      return {
-        name,
-        sales: monthSales,
-        expenses: monthExpenses,
-        purchases: monthPurchases,
-        profit: monthSales - monthCOGS - monthExpenses
-      };
-    });
-
-    const transactions = recentInvoices.map(inv => ({
-      id: inv.id,
-      name: inv.customer.name,
-      email: inv.customer.email || "No email",
-      amount: `+₹${inv.totalAmount.toFixed(2)}`,
-      status: inv.status || "Completed",
-      type: "Sale"
-    }));
+    const totalSales = 0;
+    const totalCOGS = 0;
+    const totalPurchases = 0;
+    const totalExpenses = 0;
+    const totalProfit = 0;
+    const pendingReceivables = 0;
+    const pendingPayables = 0;
+    const activeCustomers = 0;
+    const bankBalance = 0;
+    const lowStockProducts: any[] = [];
+    const chartData: any[] = [];
+    const transactions: any[] = [];
 
     return (
       <div className="flex-1 space-y-6 p-4 md:p-8 pt-6 max-w-7xl mx-auto w-full">
