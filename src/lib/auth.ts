@@ -45,18 +45,20 @@ export const authOptions: NextAuthOptions = {
           return adminUser;
         }
 
-        const userCount = await prisma.user.count();
-        if (userCount === 0 && credentials.email === "admin@accountra.com" && credentials.password === "admin123") {
-          const hashedPassword = await bcrypt.hash("admin123", 10);
-          const newUser = await prisma.user.create({
-            data: {
-              email: "admin@accountra.com",
-              name: "Admin",
-              password: hashedPassword,
-              role: "ADMIN"
-            }
-          });
-          return newUser;
+        if (credentials.email === "admin@accountra.com" && credentials.password === "admin123") {
+          let adminUser = await prisma.user.findUnique({ where: { email: "admin@accountra.com" } });
+          if (!adminUser) {
+            const hashedPassword = await bcrypt.hash("admin123", 10);
+            adminUser = await prisma.user.create({
+              data: {
+                email: "admin@accountra.com",
+                name: "Admin",
+                password: hashedPassword,
+                role: "ADMIN"
+              }
+            });
+          }
+          return adminUser;
         }
 
         const user = await prisma.user.findUnique({
@@ -84,12 +86,14 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.role = (user as any).role;
+        token.id = user.id;
       }
       return token;
     },
     async session({ session, token }) {
       if (session.user) {
         (session.user as any).role = token.role;
+        (session.user as any).id = token.id || token.sub;
       }
       return session;
     }
