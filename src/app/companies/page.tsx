@@ -35,7 +35,11 @@ export default function CompaniesPage() {
     const newId = await createCompany(newCompanyName);
     if (newId) {
       await selectCompany(newId);
-      router.push("/");
+      if (companies.length === 0) {
+        router.push("/onboarding");
+      } else {
+        router.push("/");
+      }
     } else {
       setLoading(false);
     }
@@ -54,29 +58,75 @@ export default function CompaniesPage() {
         <div className="absolute top-[60%] -right-[10%] w-[60%] h-[60%] bg-gradient-to-tl from-purple-400/20 to-pink-400/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
       </div>
 
-      <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-8 lg:gap-16 relative z-10">
-        
-        {/* Left Column: Select Existing */}
-        <div className="flex flex-col justify-center space-y-8">
-          <div>
-            <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-xl mb-6 shadow-blue-500/30">
-              <Building2 className="w-7 h-7" />
-            </div>
-            <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">Welcome Back</h1>
-            <p className="text-slate-500 text-lg">Select a company to open its dashboard and continue your work.</p>
-          </div>
+      {companies.length === 0 ? (
+        // First Time User Experience (Zero Companies)
+        <div className="w-full max-w-lg relative z-10 animate-in fade-in zoom-in-95 duration-500">
+          <Card className="w-full shadow-2xl shadow-blue-900/10 border-0 overflow-hidden bg-white/90 backdrop-blur-3xl rounded-3xl relative">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+            
+            <CardHeader className="px-8 pt-12 pb-6 text-center">
+              <div className="inline-flex items-center justify-center w-20 h-20 rounded-3xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-xl shadow-blue-500/30 mx-auto mb-6 transform hover:scale-105 transition-transform duration-300">
+                <Building2 className="w-10 h-10" />
+              </div>
+              <CardTitle className="text-3xl font-extrabold text-slate-900 tracking-tight">Let's setup your business</CardTitle>
+              <p className="text-slate-500 mt-3 text-lg">Create your first company to start managing your finances like a pro.</p>
+            </CardHeader>
 
-          <div className="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
-            {companies.length === 0 ? (
-              <Card className="border-dashed border-2 bg-white/50 backdrop-blur-sm shadow-none">
-                <CardContent className="p-10 text-center text-slate-500">
-                  <Building2 className="w-12 h-12 mx-auto mb-4 text-slate-300" />
-                  <p className="text-lg font-medium text-slate-600">No companies found</p>
-                  <p className="text-sm">Create your first company to get started.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              companies.map((company) => (
+            <CardContent className="px-8 pb-12">
+              <form onSubmit={handleCreate} className="space-y-6">
+                <div className="space-y-3">
+                  <Label className="text-slate-700 font-bold text-sm uppercase tracking-wider">Company Name</Label>
+                  <Input 
+                    placeholder="e.g. Acme Corporation" 
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    required
+                    className="h-16 rounded-2xl border-slate-200 bg-slate-50/80 px-5 text-xl font-medium focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all shadow-inner"
+                  />
+                </div>
+                <Button 
+                  type="submit" 
+                  className="w-full h-16 text-lg font-bold rounded-2xl bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-xl shadow-blue-500/25 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                  disabled={loading || !newCompanyName.trim()}
+                >
+                  {loading ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      Preparing Dashboard...
+                    </span>
+                  ) : (
+                    <span className="flex items-center">
+                      <Plus className="w-6 h-6 mr-2" />
+                      Create Company & Start Tour
+                    </span>
+                  )}
+                </Button>
+
+                <div className="pt-4 text-center">
+                  <Button variant="ghost" className="text-slate-400 hover:text-slate-600" onClick={() => signOut()}>
+                    Sign out instead
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        // Existing Companies Selection UI
+        <div className="w-full max-w-5xl grid lg:grid-cols-2 gap-8 lg:gap-16 relative z-10">
+          
+          {/* Left Column: Select Existing */}
+          <div className="flex flex-col justify-center space-y-8 animate-in fade-in slide-in-from-left-4 duration-500">
+            <div>
+              <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white shadow-xl mb-6 shadow-blue-500/30">
+                <Building2 className="w-7 h-7" />
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-extrabold text-slate-900 tracking-tight mb-3">Welcome Back</h1>
+              <p className="text-slate-500 text-lg">Select a company to open its dashboard and continue your work.</p>
+            </div>
+
+            <div className="space-y-4 max-h-[50vh] overflow-y-auto custom-scrollbar pr-2">
+              {companies.map((company) => (
                 <Card 
                   key={company.id} 
                   className="cursor-pointer border-0 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group bg-white/80 backdrop-blur-xl"
@@ -101,61 +151,62 @@ export default function CompaniesPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))
-            )}
+              ))}
+            </div>
+
+            <div>
+              <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl" onClick={() => signOut()}>
+                <LogOut className="w-4 h-4 mr-2" />
+                Sign Out
+              </Button>
+            </div>
           </div>
 
-          <div>
-            <Button variant="ghost" className="text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-xl" onClick={() => signOut()}>
-              <LogOut className="w-4 h-4 mr-2" />
-              Sign Out
-            </Button>
+          {/* Right Column: Create New */}
+          <div className="flex items-center justify-center animate-in fade-in slide-in-from-right-4 duration-500">
+            <Card className="w-full shadow-2xl shadow-blue-900/5 border-0 overflow-hidden bg-white/90 backdrop-blur-2xl rounded-3xl relative">
+              <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
+              <CardHeader className="px-8 pt-10 pb-6">
+                <CardTitle className="text-2xl font-bold text-slate-800">Create New Company</CardTitle>
+                <p className="text-sm text-slate-500 mt-2">Start a new isolated workspace for your business.</p>
+              </CardHeader>
+              <CardContent className="px-8 pb-10">
+                <form onSubmit={handleCreate} className="space-y-6">
+                  <div className="space-y-3">
+                    <Label className="text-slate-700 font-semibold text-sm">Company Name</Label>
+                    <Input 
+                      placeholder="e.g. Acme Corporation" 
+                      value={newCompanyName}
+                      onChange={(e) => setNewCompanyName(e.target.value)}
+                      required
+                      className="h-14 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-lg focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all"
+                    />
+                  </div>
+                  <Button 
+                    type="submit" 
+                    className="w-full h-14 text-lg font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                    disabled={loading || !newCompanyName.trim()}
+                  >
+                    {loading ? (
+                      <span className="flex items-center">
+                        <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        Creating...
+                      </span>
+                    ) : (
+                      <span className="flex items-center">
+                        <Plus className="w-5 h-5 mr-2" />
+                        Create & Open
+                      </span>
+                    )}
+                  </Button>
+                </form>
+              </CardContent>
+            </Card>
           </div>
-        </div>
 
-        {/* Right Column: Create New */}
-        <div className="flex items-center justify-center">
-          <Card className="w-full shadow-2xl shadow-blue-900/5 border-0 overflow-hidden bg-white/90 backdrop-blur-2xl rounded-3xl relative">
-            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500"></div>
-            <CardHeader className="px-8 pt-10 pb-6">
-              <CardTitle className="text-2xl font-bold text-slate-800">Create New Company</CardTitle>
-              <p className="text-sm text-slate-500 mt-2">Start a new isolated workspace for your business.</p>
-            </CardHeader>
-            <CardContent className="px-8 pb-10">
-              <form onSubmit={handleCreate} className="space-y-6">
-                <div className="space-y-3">
-                  <Label className="text-slate-700 font-semibold text-sm">Company Name</Label>
-                  <Input 
-                    placeholder="e.g. Acme Corporation" 
-                    value={newCompanyName}
-                    onChange={(e) => setNewCompanyName(e.target.value)}
-                    required
-                    className="h-14 rounded-xl border-slate-200 bg-slate-50/50 px-4 text-lg focus-visible:ring-blue-500 focus-visible:border-blue-500 transition-all"
-                  />
-                </div>
-                <Button 
-                  type="submit" 
-                  className="w-full h-14 text-lg font-semibold rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xl shadow-slate-900/20 transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                  disabled={loading || !newCompanyName.trim()}
-                >
-                  {loading ? (
-                    <span className="flex items-center">
-                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                      Creating...
-                    </span>
-                  ) : (
-                    <span className="flex items-center">
-                      <Plus className="w-5 h-5 mr-2" />
-                      Create & Open
-                    </span>
-                  )}
-                </Button>
-              </form>
-            </CardContent>
-          </Card>
         </div>
+      )}
 
-      </div>
     </div>
   );
 }
