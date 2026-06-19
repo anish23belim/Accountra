@@ -1,11 +1,9 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { OverviewWrapper } from "@/components/dashboard/overview-wrapper";
 import { RecentTransactions } from "@/components/dashboard/recent-transactions";
 import { DollarSign, Users, Package, CreditCard, AlertCircle, ArrowUpRight, ArrowDownRight, TrendingUp, Wallet, Banknote, ShoppingCart } from "lucide-react";
 import Link from "next/link";
 import { getPrisma } from "@/lib/prisma-client";
-import dynamic_import from "next/dynamic";
-
-const Overview = dynamic_import(() => import("@/components/dashboard/overview").then(mod => mod.Overview), { ssr: false });
 
 export const dynamic = 'force-dynamic';
 
@@ -293,8 +291,8 @@ export default async function Dashboard() {
             <CardTitle className="text-lg font-bold">Analytics</CardTitle>
             <CardDescription>Sales vs Expenses this year</CardDescription>
           </CardHeader>
-          <CardContent className="p-4 pl-0">
-            <Overview data={chartData} />
+          <CardContent className="pl-2">
+            <OverviewWrapper data={chartData} />
           </CardContent>
         </Card>
         
