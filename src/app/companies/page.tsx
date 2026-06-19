@@ -15,6 +15,7 @@ export default function CompaniesPage() {
   const [companies, setCompanies] = useState<any[]>([]);
   const [isFetching, setIsFetching] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
+  const [isSelecting, setIsSelecting] = useState<string | null>(null);
   const [newCompanyName, setNewCompanyName] = useState("");
 
   useEffect(() => {
@@ -25,7 +26,14 @@ export default function CompaniesPage() {
   }, []);
 
   const handleSelect = async (id: string) => {
-    await selectCompany(id, "/");
+    setIsSelecting(id);
+    const success = await selectCompany(id); // Removed redirect path
+    if (success) {
+      // Force a hard reload to ensure middleware and cookies are synchronized
+      window.location.href = "/";
+    } else {
+      setIsSelecting(null);
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -34,10 +42,13 @@ export default function CompaniesPage() {
     setIsCreating(true);
     const newId = await createCompany(newCompanyName);
     if (newId) {
-      if (companies.length === 0) {
-        await selectCompany(newId, "/onboarding");
-      } else {
-        await selectCompany(newId, "/");
+      const success = await selectCompany(newId);
+      if (success) {
+        if (companies.length === 0) {
+          window.location.href = "/onboarding";
+        } else {
+          window.location.href = "/";
+        }
       }
     } else {
       setIsCreating(false);
@@ -128,13 +139,17 @@ export default function CompaniesPage() {
               {companies.map((company) => (
                 <Card 
                   key={company.id} 
-                  className="cursor-pointer border-0 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group bg-white/80 backdrop-blur-xl"
+                  className={`cursor-pointer border-0 shadow-lg shadow-slate-200/50 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 group bg-white/80 backdrop-blur-xl ${isSelecting === company.id ? 'opacity-75 pointer-events-none scale-[0.98]' : ''}`}
                   onClick={() => handleSelect(company.id)}
                 >
                   <CardContent className="p-6 flex items-center justify-between">
                     <div className="flex items-center gap-5">
                       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 flex items-center justify-center text-slate-700 font-bold text-xl shadow-inner group-hover:from-blue-500 group-hover:to-indigo-500 group-hover:text-white transition-all duration-300">
-                        {company.name.charAt(0).toUpperCase()}
+                        {isSelecting === company.id ? (
+                          <svg className="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                        ) : (
+                          company.name.charAt(0).toUpperCase()
+                        )}
                       </div>
                       <div>
                         <h3 className="font-bold text-lg text-slate-900 group-hover:text-blue-600 transition-colors">
@@ -146,7 +161,11 @@ export default function CompaniesPage() {
                       </div>
                     </div>
                     <div className="w-10 h-10 rounded-full bg-slate-50 flex items-center justify-center group-hover:bg-blue-50 transition-colors">
-                      <ChevronRight className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+                      {isSelecting === company.id ? (
+                        <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                      ) : (
+                        <ChevronRight className="text-slate-400 group-hover:text-blue-600 transition-colors" />
+                      )}
                     </div>
                   </CardContent>
                 </Card>
