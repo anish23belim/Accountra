@@ -66,11 +66,9 @@ export function TopNav() {
         
         {/* Mobile Menu */}
         <Sheet open={isMobileMenuOpen} onOpenChange={setIsMobileMenuOpen}>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="md:hidden mr-2 hover:bg-slate-100 rounded-xl">
+          <SheetTrigger className="md:hidden mr-2 p-2 hover:bg-slate-100 rounded-xl inline-flex items-center justify-center">
               <Menu className="h-6 w-6 text-slate-700" />
               <span className="sr-only">Toggle menu</span>
-            </Button>
           </SheetTrigger>
           <SheetContent side="left" className="w-[300px] bg-white border-r-0 p-0 shadow-2xl flex flex-col">
             <SheetHeader className="p-6 text-left border-b border-slate-100 bg-slate-50/50">

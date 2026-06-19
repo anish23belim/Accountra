@@ -206,7 +206,7 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
           "Pcs.", // Unit
           item.price.toFixed(2),
           "0.00 (%)", // Disc
-          item.taxRate?.toFixed(2) || "0.00", // Tax %
+          (item as any).taxRate?.toFixed(2) || "0.00", // Tax %
           item.total.toFixed(2)
         ])
       : [[1, 'Professional Services / Goods', '-', '1.00', 'Pcs.', invoice.amount.toFixed(2), '0.00 (%)', '0.00', invoice.amount.toFixed(2)]];
@@ -218,15 +218,15 @@ export function SalesTable({ initialData, settings, onSearchChange }: { initialD
       body: tableBody,
       theme: 'grid',
       headStyles: { 
-        fillColor: tableHeaderBgColor, 
+        fillColor: tableHeaderBgColor as [number, number, number], 
         textColor: 20, 
         fontStyle: 'bold', 
         halign: 'center',
-        lineColor: borderColor,
+        lineColor: borderColor as [number, number, number],
         lineWidth: 0.2
       },
       bodyStyles: {
-        lineColor: borderColor,
+        lineColor: borderColor as [number, number, number],
         lineWidth: 0.2,
         textColor: 20,
       },
